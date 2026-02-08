@@ -90,30 +90,13 @@ No data is sent anywhere unless you explicitly pass `--submit`.
 
 ## Contributing
 
-Add checks, update threat intel, improve fix commands.
+Add checks, update threat intel, improve fix commands. See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide.
 
-### Check format
+Quick version:
 
-Each check in `audit.sh` follows this pattern:
-
-```bash
-check_XX() {
-  local cat="category"
-  if should_skip "$cat"; then record -1 "Skipped (--skip=$cat)"; return; fi
-  # ... detection logic ...
-  record 1 "PASS reason"   # pass
-  record 0 "FAIL reason"   # fail
-  record 2 "WARN reason"   # warn
-  record -1 "SKIP reason"  # not applicable
-}
-```
-
-### How to contribute
-
-1. Fork this repo
-2. Add your check to `audit.sh`
-3. Update check count, scoring weights, and labels
-4. Open a PR with a reference (CVE, blog post, research paper) and real-world impact
+1. New checks get the next CLAW number (CLAW-73, CLAW-74, ...) — never renumber existing checks
+2. Update `audit.sh` (check function + parallel arrays), `components/agent-instructions.tsx` (CheckCard), and all count references
+3. Every check needs: verified detection, concrete fix command, OWASP/CVE reference, real-world impact
 
 ## Credits
 

@@ -224,7 +224,70 @@ rm ~/.openclaw/agents/*/sessions/<affected_session>.jsonl
 
 ---
 
-### CLAW-08: Sandbox Configuration
+### CLAW-08: Docker Privileged Mode
+| | |
+|---|---|
+| **Severity** | CRITICAL (15 pts) |
+| **OWASP** | ASI-05 Unexpected Code Running |
+| **CVE** | CVE-2023-37273 (AutoGPT Docker escape) |
+| **Verified** | Yes — inspects container runtime configuration |
+
+**What to check:**
+1. Detect if running inside Docker: check for `/.dockerenv` file or `cgroup` entries containing `docker`/`containerd`
+2. If not in Docker: **SKIP**
+3. If in Docker, inspect the container configuration for:
+   - `--privileged` flag (check: `cat /proc/1/status | grep CapEff` — if all bits set `0000003fffffffff`, container is privileged)
+   - Host network mode (check: `cat /proc/1/net/dev` and compare to host — if identical, host networking is active)
+   - Dangerous volume mounts: `/` or `/home` or `/etc` mounted from host (check: `mount | grep -E "on / type|on /home type|on /etc type"` for bind mounts from host)
+4. If `--privileged` or host root/home mounted: **VERIFIED FAIL** — any agent compromise is full host compromise
+5. If host network only: **WARN**
+6. If none of the above: **PASS**
+
+**Fix:**
+```bash
+# Remove --privileged flag from docker run / docker-compose.yml
+# Replace host volume mounts with specific directories:
+#   BAD:  -v /:/host
+#   GOOD: -v /path/to/project:/workspace:ro
+# Use non-root user inside container:
+#   USER 1000:1000 in Dockerfile
+# Drop all capabilities and add only what's needed:
+docker run --cap-drop=ALL --cap-add=NET_BIND_SERVICE ...
+```
+
+---
+
+### CLAW-09: Agent Running as Root
+| | |
+|---|---|
+| **Severity** | CRITICAL (15 pts) |
+| **OWASP** | ASI-05 Unexpected Code Running |
+| **Ref** | If UID=0, any agent compromise = full system compromise |
+| **Verified** | Yes — checks process UID |
+
+**What to check:**
+1. Check the UID of the current process: run `id -u`
+2. If UID is `0` (root): **VERIFIED FAIL** — the agent has unrestricted system access
+3. Also check if the agent user has passwordless sudo: run `sudo -n true 2>/dev/null` — if it succeeds without prompting, the user effectively has root
+4. If UID != 0 and no passwordless sudo: **VERIFIED PASS**
+5. If UID != 0 but passwordless sudo exists: **WARN**
+
+**Fix:**
+```bash
+# Create a dedicated non-root user for the agent:
+sudo useradd -m -s /bin/bash openclaw-agent
+# Run the agent as that user:
+sudo -u openclaw-agent openclaw start
+# Remove passwordless sudo if present:
+sudo visudo  # Remove NOPASSWD entries for the agent user
+# In Docker, add to Dockerfile:
+RUN useradd -m agent
+USER agent
+```
+
+---
+
+### CLAW-10: Sandbox Configuration
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -247,7 +310,7 @@ openclaw config set sandbox.scope session
 
 ---
 
-### CLAW-09: Elevated Mode Restrictions
+### CLAW-11: Elevated Mode Restrictions
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -270,7 +333,7 @@ openclaw config delete tools.elevated
 
 ---
 
-### CLAW-10: Configuration File Permissions
+### CLAW-12: Configuration File Permissions
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -298,7 +361,7 @@ openclaw doctor --fix
 
 ---
 
-### CLAW-11: Installed Skills Against Threat Intel
+### CLAW-13: Installed Skills Against Threat Intel
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -332,7 +395,7 @@ openclaw config set plugins.allow '["skill-a", "skill-b"]'
 
 ---
 
-### CLAW-12: MCP Server Known Vulnerabilities
+### CLAW-14: MCP Server Known Vulnerabilities
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -358,7 +421,7 @@ npm update mcp-remote @anthropic/mcp-inspector @anthropic/mcp-server-filesystem
 
 ---
 
-### CLAW-13: OpenClaw Version Security
+### CLAW-15: OpenClaw Version Security
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -381,7 +444,7 @@ npm install -g openclaw@latest
 
 ---
 
-### CLAW-14: Session File Permissions
+### CLAW-16: Session File Permissions
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -404,90 +467,7 @@ chmod -R 700 ~/.openclaw/agents/*/sessions/
 
 ---
 
-### CLAW-15: Log Redaction Configuration
-| | |
-|---|---|
-| **Severity** | MEDIUM (5 pts) |
-| **CVE** | CVE-2026-22038 (AutoGPT plaintext key logging) |
-| **Ref** | Secrets in logs are the #1 accidental exposure vector |
-
-**What to check:**
-1. Read `~/.openclaw/openclaw.json` → `logging.redactSensitive`
-2. If not set or set to `off`: **FAIL**
-3. If set to `tools` (default): **PASS**
-4. Bonus: check if `logging.redactPatterns` has custom patterns for the user's specific API key formats
-
-**Fix:**
-```bash
-openclaw config set logging.redactSensitive tools
-```
-
----
-
-### CLAW-16: Docker Privileged Mode
-| | |
-|---|---|
-| **Severity** | CRITICAL (15 pts) |
-| **OWASP** | ASI-05 Unexpected Code Running |
-| **CVE** | CVE-2023-37273 (AutoGPT Docker escape) |
-| **Verified** | Yes — inspects container runtime configuration |
-
-**What to check:**
-1. Detect if running inside Docker: check for `/.dockerenv` file or `cgroup` entries containing `docker`/`containerd`
-2. If not in Docker: **SKIP**
-3. If in Docker, inspect the container configuration for:
-   - `--privileged` flag (check: `cat /proc/1/status | grep CapEff` — if all bits set `0000003fffffffff`, container is privileged)
-   - Host network mode (check: `cat /proc/1/net/dev` and compare to host — if identical, host networking is active)
-   - Dangerous volume mounts: `/` or `/home` or `/etc` mounted from host (check: `mount | grep -E "on / type|on /home type|on /etc type"` for bind mounts from host)
-4. If `--privileged` or host root/home mounted: **VERIFIED FAIL** — any agent compromise is full host compromise
-5. If host network only: **WARN**
-6. If none of the above: **PASS**
-
-**Fix:**
-```bash
-# Remove --privileged flag from docker run / docker-compose.yml
-# Replace host volume mounts with specific directories:
-#   BAD:  -v /:/host
-#   GOOD: -v /path/to/project:/workspace:ro
-# Use non-root user inside container:
-#   USER 1000:1000 in Dockerfile
-# Drop all capabilities and add only what's needed:
-docker run --cap-drop=ALL --cap-add=NET_BIND_SERVICE ...
-```
-
----
-
-### CLAW-17: Agent Running as Root
-| | |
-|---|---|
-| **Severity** | CRITICAL (15 pts) |
-| **OWASP** | ASI-05 Unexpected Code Running |
-| **Ref** | If UID=0, any agent compromise = full system compromise |
-| **Verified** | Yes — checks process UID |
-
-**What to check:**
-1. Check the UID of the current process: run `id -u`
-2. If UID is `0` (root): **VERIFIED FAIL** — the agent has unrestricted system access
-3. Also check if the agent user has passwordless sudo: run `sudo -n true 2>/dev/null` — if it succeeds without prompting, the user effectively has root
-4. If UID != 0 and no passwordless sudo: **VERIFIED PASS**
-5. If UID != 0 but passwordless sudo exists: **WARN**
-
-**Fix:**
-```bash
-# Create a dedicated non-root user for the agent:
-sudo useradd -m -s /bin/bash openclaw-agent
-# Run the agent as that user:
-sudo -u openclaw-agent openclaw start
-# Remove passwordless sudo if present:
-sudo visudo  # Remove NOPASSWD entries for the agent user
-# In Docker, add to Dockerfile:
-RUN useradd -m agent
-USER agent
-```
-
----
-
-### CLAW-18: Default Credentials in Config
+### CLAW-17: Default Credentials in Config
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -523,7 +503,7 @@ chmod 600 ~/.openclaw/.env
 
 ---
 
-### CLAW-19: .env Not in .gitignore
+### CLAW-18: .env Not in .gitignore
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -548,12 +528,12 @@ echo ".env.*" >> .gitignore
 # If .env was already committed, remove from tracking (file stays on disk):
 git rm --cached .env
 git commit -m "Remove .env from tracking"
-# WARNING: The .env is still in git history — see CLAW-20
+# WARNING: The .env is still in git history — see CLAW-19
 ```
 
 ---
 
-### CLAW-20: Secrets in Git History
+### CLAW-19: Secrets in Git History
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -598,7 +578,7 @@ git push --force-with-lease
 
 ---
 
-### CLAW-21: Browser Profiles Accessible
+### CLAW-20: Browser Profiles Accessible
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -638,7 +618,7 @@ sudo -u openclaw-agent openclaw start
 
 ---
 
-### CLAW-22: Git Credentials Accessible
+### CLAW-21: Git Credentials Accessible
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -675,7 +655,7 @@ openclaw config set sandbox.mode all
 
 ---
 
-### CLAW-23: Database Credentials Accessible
+### CLAW-22: Database Credentials Accessible
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -713,7 +693,7 @@ sudo -u openclaw-agent openclaw start
 
 ---
 
-### CLAW-24: Additional Services on 0.0.0.0
+### CLAW-23: Additional Services on 0.0.0.0
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -750,7 +730,7 @@ sudo -u openclaw-agent openclaw start
 
 ---
 
-### CLAW-25: No Firewall Rules
+### CLAW-24: No Firewall Rules
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -793,7 +773,7 @@ sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on
 
 ---
 
-### CLAW-26: Container Security Profile
+### CLAW-25: Container Security Profile
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -831,7 +811,7 @@ sudo apt update && sudo apt install docker-ce docker-ce-cli
 
 ---
 
-### CLAW-27: Agent Code Integrity
+### CLAW-26: Agent Code Integrity
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -864,7 +844,7 @@ sudo chmod -R a-w /usr/lib/node_modules/openclaw/
 
 ---
 
-### CLAW-28: npm Post-Install Scripts in Skills
+### CLAW-27: npm Post-Install Scripts in Skills
 | | |
 |---|---|
 | **Severity** | HIGH (10 pts) |
@@ -901,6 +881,26 @@ openclaw config set plugins.allow '["trusted-skill-1", "trusted-skill-2"]'
 
 ---
 
+### CLAW-28: Log Redaction Configuration
+| | |
+|---|---|
+| **Severity** | MEDIUM (5 pts) |
+| **CVE** | CVE-2026-22038 (AutoGPT plaintext key logging) |
+| **Ref** | Secrets in logs are the #1 accidental exposure vector |
+
+**What to check:**
+1. Read `~/.openclaw/openclaw.json` → `logging.redactSensitive`
+2. If not set or set to `off`: **FAIL**
+3. If set to `tools` (default): **PASS**
+4. Bonus: check if `logging.redactPatterns` has custom patterns for the user's specific API key formats
+
+**Fix:**
+```bash
+openclaw config set logging.redactSensitive tools
+```
+
+---
+
 ### CLAW-29: Debug Logging Enabled
 | | |
 |---|---|
@@ -925,7 +925,7 @@ openclaw config set logging.level warn
 #   DEBUG=*
 #   OPENCLAW_LOG_LEVEL=debug
 #   NODE_DEBUG=*
-# Also ensure log redaction is enabled (see CLAW-15):
+# Also ensure log redaction is enabled (see CLAW-28):
 openclaw config set logging.redactSensitive tools
 ```
 
@@ -977,9 +977,9 @@ touch ~/.openclaw/.nosync
 
 | Severity | Points per check | Count |
 |----------|-----------------|-------|
-| CRITICAL | 15 | 13 checks |
-| HIGH | 10 | 37 checks |
-| MEDIUM | 5 | 13 checks |
+| CRITICAL | 15 | 21 checks |
+| HIGH | 10 | 43 checks |
+| MEDIUM | 5 | 8 checks |
 | **Total** | **785** | **72 checks** |
 
 ### Calculation

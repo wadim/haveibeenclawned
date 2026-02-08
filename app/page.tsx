@@ -81,6 +81,7 @@ export default function HaveIBeenClawnedPage() {
               <div className="flex items-start gap-2"><span className="text-green-500/70 mt-0.5">&#10003;</span> Skill supply chain: typosquatting, npm scripts, threat intel</div>
               <div className="flex items-start gap-2"><span className="text-green-500/70 mt-0.5">&#10003;</span> Browser profiles, git credentials, DB credentials, wallets</div>
               <div className="flex items-start gap-2"><span className="text-green-500/70 mt-0.5">&#10003;</span> Memory poisoning, dormant payloads &amp; rules file injection</div>
+              <div className="flex items-start gap-2"><span className="text-green-500/70 mt-0.5">&#10003;</span> Config hardening: sandbox, permissions, auto-approve, log redaction</div>
               <div className="flex items-start gap-2"><span className="text-green-500/70 mt-0.5">&#10003;</span> Agent identity, code integrity &amp; persistence paths</div>
             </div>
           </div>
@@ -102,25 +103,59 @@ export default function HaveIBeenClawnedPage() {
       {/* References */}
       <References />
 
-      {/* Share CTA */}
+      {/* Contribute CTA */}
       <section className="py-24 px-4">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Help the community
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground text-center mb-4">
+            Run it. Break it. Improve it.
           </h2>
-          <p className="text-lg text-muted-foreground mb-8">
-            Most OpenClaw agents are running with critical security issues and
-            their owners don&apos;t know. Share this tool so they can find out.
+          <p className="text-lg text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
+            Security is a moving target. We need the community to keep this tool sharp.
           </p>
-          <a
-            href="https://github.com/wadim/haveibeenclawned"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-foreground text-background font-semibold text-lg hover:bg-foreground/90 transition-colors"
-          >
-            Star on GitHub
-          </a>
-          <p className="text-sm text-muted-foreground mt-4">
+
+          <div className="grid gap-4 md:grid-cols-3 mb-12">
+            <div className="rounded-2xl border border-border/50 bg-card/30 p-6">
+              <p className="text-sm font-semibold text-foreground mb-2">Test it</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Run the audit on your agent. Report false positives. Tell us what we miss.
+                Your environment is different from ours &mdash; that&apos;s the point.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-border/50 bg-card/30 p-6">
+              <p className="text-sm font-semibold text-foreground mb-2">Add checks</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Found an attack vector we don&apos;t cover? New CVE? New misconfiguration?
+                Add a check with a verified detection and a concrete fix command.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-border/50 bg-card/30 p-6">
+              <p className="text-sm font-semibold text-foreground mb-2">Share threat intel</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                New C2 IPs, malicious domains, IOC patterns, known-bad publishers.
+                The threat intel arrays in the script are community-maintained.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a
+              href="https://github.com/wadim/haveibeenclawned"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-foreground text-background font-semibold text-lg hover:bg-foreground/90 transition-colors"
+            >
+              Star on GitHub
+            </a>
+            <a
+              href="https://github.com/wadim/haveibeenclawned/blob/main/CONTRIBUTING.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border border-border/50 text-foreground font-semibold text-lg hover:bg-card/50 transition-colors"
+            >
+              Contributing guide
+            </a>
+          </div>
+          <p className="text-sm text-muted-foreground text-center mt-4">
             Open source. Free forever.
           </p>
         </div>
