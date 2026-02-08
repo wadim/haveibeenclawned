@@ -93,7 +93,17 @@ fi
 declare -a RESULTS=()
 declare -a DETAILS=()
 
-# Points per check (indexed 0-71)
+# Canonical source of truth: data/checks.json
+# Keep these arrays in sync — run: npm run validate-checks
+#
+# Points per check (indexed 0-71): CRITICAL=15, HIGH=10, MEDIUM=5
+#
+# NUMBERING CONVENTION: CLAW-XX is a stable identifier, like CVE numbers.
+# New checks always get the next sequential number (CLAW-73, CLAW-74, ...).
+# Severity determines display order, not the CLAW number.
+# Never renumber existing checks — it breaks references across the website,
+# SKILL.md, reports, and any external links.
+#
 # CLAW-01..09: CRITICAL(15), CLAW-10..27: HIGH(10), CLAW-28..30: MEDIUM(5)
 # CLAW-31..34: CRITICAL(15), CLAW-35: HIGH(10), CLAW-36: CRITICAL(15)
 # CLAW-37..48: HIGH(10), CLAW-49..50: MEDIUM(5)
@@ -3196,6 +3206,8 @@ check_72() {
 # RUN ALL CHECKS
 # ══════════════════════════════════════════════════════════════════════════════
 
+# Canonical source of truth: data/checks.json
+# Keep these labels in sync — run: npm run validate-checks
 CHECK_LABELS=(
   "Gateway Network Exposure"
   "Gateway Authentication"
@@ -3230,30 +3242,30 @@ CHECK_LABELS=(
   "MCP Tool Description Poisoning"
   "MCP Tool Shadowing"
   "Unrestricted Outbound Network"
-  "Messaging Token Exposure"
+  "Messaging Platform Token Exposure"
   "No User Namespace Isolation"
-  "Dangerous CLI Flags"
-  "Writable Install Directory"
-  "No Rate Limiting"
-  "Crypto Wallets Accessible"
-  "Unsafe Deserialization"
-  "No Container Read-Only FS"
-  "Skill Network Unrestricted"
+  "Dangerous CLI Flags in Startup"
+  "Writable Agent Installation Directory"
+  "No Rate Limiting on Agent API"
+  "Cryptocurrency Wallet Files Accessible"
+  "Unsafe Deserialization in Dependencies"
+  "No Container Read-Only Filesystem"
+  "Skill Network Access Unrestricted"
   "Unencrypted Session Storage"
   "Rules File Injection"
-  "Stale API Keys"
+  "Stale or Unrotated API Keys"
   "npm Audit Vulnerabilities"
   "Excessive Tool Permissions"
   "Insecure MCP Transport"
   "No Process Resource Limits"
-  "Exposed Debug Endpoints"
-  "WebSocket Origin Validation"
+  "Exposed Health/Debug Endpoints"
+  "WebSocket Origin Validation (CSWSH)"
   "LLM Endpoint Integrity"
-  "Credential Routing Through LLM"
+  "Credential Routing Through LLM Context"
   "Persistent Memory Poisoning"
   "Auto-Approval Beyond --yolo"
   "Semantic Tool Description Poisoning"
-  "Tool Definition Pinning"
+  "Tool Definition Pinning (Rug-Pull)"
   "MCP Credential Hygiene"
   "Dormant Payload Detection"
   "Observability Endpoint Security"
@@ -3395,11 +3407,14 @@ else
     esac
   done
 
-  for i in "${!RESULTS[@]}"; do
-    local_result=${RESULTS[$i]}
-    local_detail="${DETAILS[$i]}"
-    local_label="${CHECK_LABELS[$i]}"
-    local_severity="${severity_labels[$i]}"
+  # Print helper
+  print_check() {
+    local i=$1
+    local local_result=${RESULTS[$i]}
+    local local_detail="${DETAILS[$i]}"
+    local local_label="${CHECK_LABELS[$i]}"
+    local local_severity="${severity_labels[$i]}"
+    local local_id
     local_id=$(printf "CLAW-%02d" $((i + 1)))
 
     case $local_result in
@@ -3409,8 +3424,24 @@ else
       *)  icon="${DIM}SKIP${RESET}" ;;
     esac
 
-    printf "  [%b] %-7s %-7s  %-40s %b\n" \
+    printf "  [%b] %-7s %-8s %-40s %b\n" \
       "$icon" "$local_id" "$local_severity" "$local_label" "${DIM}${local_detail}${RESET}"
+  }
+
+  # Group output by severity: CRITICAL → HIGH → MEDIUM
+  echo -e "  ${RED}${BOLD}CRITICAL${RESET}"
+  for i in "${!RESULTS[@]}"; do
+    (( CHECK_POINTS[i] == 15 )) && print_check "$i"
+  done
+  echo ""
+  echo -e "  ${ORANGE}${BOLD}HIGH${RESET}"
+  for i in "${!RESULTS[@]}"; do
+    (( CHECK_POINTS[i] == 10 )) && print_check "$i"
+  done
+  echo ""
+  echo -e "  ${YELLOW}${BOLD}MEDIUM${RESET}"
+  for i in "${!RESULTS[@]}"; do
+    (( CHECK_POINTS[i] == 5 )) && print_check "$i"
   done
 
   echo ""

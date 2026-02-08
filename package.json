@@ -6,7 +6,8 @@
     "build": "next build",
     "dev": "next dev",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "validate-checks": "tsx scripts/validate-checks.ts"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.19",
@@ -23,6 +24,7 @@
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",
+    "tsx": "^4",
     "typescript": "^5"
   }
 }

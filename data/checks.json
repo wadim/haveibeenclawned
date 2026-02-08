@@ -1,0 +1,1249 @@
+[
+  {
+    "id": "CLAW-01",
+    "title": "Gateway Network Exposure",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "network",
+    "owasp": "ASI-03",
+    "cve": "CVE-2026-25253",
+    "cwe": "CWE-1327",
+    "atlas": "AML.T0043",
+    "nist": "SC-7",
+    "description": "Gateway bound to public interface — accessible from the internet",
+    "steps": [
+      "Read ~/.openclaw/openclaw.json → gateway.bind",
+      "If 0.0.0.0, lan, or non-loopback: VERIFIED FAIL",
+      "If loopback/127.0.0.1: probe external interface. Blocked → VERIFIED PASS"
+    ],
+    "fix": "openclaw config set gateway.bind loopback"
+  },
+  {
+    "id": "CLAW-02",
+    "title": "Gateway Authentication",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "network",
+    "owasp": "ASI-03",
+    "cve": "CVE-2026-25253",
+    "cwe": "CWE-306",
+    "atlas": "AML.T0048",
+    "nist": "AC-6",
+    "description": "No authentication on gateway — anyone who can reach it controls your agent",
+    "steps": [
+      "Read ~/.openclaw/openclaw.json → gateway.auth",
+      "Auth disabled/no token: FAIL",
+      "Auth enabled: attempt unauthenticated WebSocket (5s). Connects → VERIFIED FAIL. Rejected → VERIFIED PASS"
+    ],
+    "fix": "openclaw config set gateway.auth.mode token && openclaw config set gateway.auth.token \"$(openssl rand -hex 32)\""
+  },
+  {
+    "id": "CLAW-03",
+    "title": "Cloud Metadata Service",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "network",
+    "owasp": "ASI-03",
+    "cwe": "CWE-918",
+    "atlas": "AML.T0043",
+    "nist": "SC-7",
+    "description": "Cloud metadata endpoint accessible — agent can steal IAM credentials",
+    "steps": [
+      "curl -s -m 2 http://169.254.169.254/latest/meta-data/",
+      "HTTP 200: VERIFIED FAIL. Timeout: PASS. Not on cloud: SKIP"
+    ],
+    "fix": "sudo iptables -A OUTPUT -d 169.254.169.254 -j DROP"
+  },
+  {
+    "id": "CLAW-04",
+    "title": "Personal Email as Agent Identity",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "identity",
+    "owasp": "ASI-03",
+    "cwe": "CWE-269",
+    "atlas": "AML.T0052",
+    "nist": "IA-5",
+    "description": "Personal email used as agent identity — compromise means impersonation",
+    "steps": [
+      "Read ~/.openclaw/openclaw.json → email config",
+      "Match against gmail.com, yahoo.com, hotmail.com, outlook.com, icloud.com, protonmail.com, etc.",
+      "Match: FAIL. Custom domain or no email: PASS"
+    ],
+    "fix": "Use a dedicated agent email on a domain you control"
+  },
+  {
+    "id": "CLAW-05",
+    "title": "Plaintext API Keys in Config",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "secrets",
+    "owasp": "ASI-03",
+    "cve": "CVE-2026-22038",
+    "cwe": "CWE-312",
+    "atlas": "AML.T0056",
+    "nist": "RA-5",
+    "description": "API keys in plaintext config files — any skill or process can read them",
+    "steps": [
+      "Scan: ~/.openclaw/openclaw.json, ~/.openclaw/.env, .env, openclaw.json",
+      "Patterns: sk- (20+), sk-ant-, AKIA (16), ghp_ (36), xoxb-/xoxp-, AIza (35)",
+      "Any match: FAIL (report file + type, never echo the key)"
+    ],
+    "fix": "chmod 600 ~/.openclaw/.env && openclaw config set auth.keychain true"
+  },
+  {
+    "id": "CLAW-06",
+    "title": "Sensitive Files Accessible",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "identity",
+    "owasp": "ASI-03",
+    "cwe": "CWE-732",
+    "atlas": "AML.T0052",
+    "nist": "RA-5",
+    "description": "SSH keys, cloud credentials, or other sensitive files readable by agent",
+    "steps": [
+      "Test readable: ~/.ssh/id_rsa, ~/.ssh/id_ed25519, ~/.aws/credentials, ~/.config/gcloud/application_default_credentials.json, ~/.kube/config, ~/.npmrc, ~/.docker/config.json, ~/.netrc",
+      "3+: VERIFIED FAIL. 1-2: WARN. None: VERIFIED PASS"
+    ],
+    "fix": "openclaw config set sandbox.mode all"
+  },
+  {
+    "id": "CLAW-07",
+    "title": "Secrets in Session Transcripts",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "secrets",
+    "owasp": "ASI-03",
+    "cve": "CVE-2026-22038",
+    "cwe": "CWE-532",
+    "atlas": "AML.T0056",
+    "nist": "RA-5",
+    "description": "API keys, credit cards, or SSNs found in conversation history files",
+    "steps": [
+      "OPT-IN: Ask user consent. Declined → SKIP",
+      "Scan 10 most recent files in ~/.openclaw/agents/*/sessions/*.jsonl",
+      "Credit cards, SSNs, API keys found → VERIFIED FAIL (report count, never values)"
+    ],
+    "fix": "openclaw config set logging.redactSensitive tools"
+  },
+  {
+    "id": "CLAW-08",
+    "title": "Docker Privileged Mode",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "container",
+    "owasp": "ASI-05",
+    "cve": "CVE-2024-21626",
+    "cwe": "CWE-250",
+    "atlas": "AML.T0050",
+    "nist": "SI-7",
+    "description": "Container running with --privileged, host network, or full filesystem mount",
+    "steps": [
+      "Check if running in Docker: test -f /.dockerenv",
+      "docker inspect: check Privileged, NetworkMode=host, Binds mounting / or /home",
+      "Privileged or host net or full mount: VERIFIED FAIL. Not in Docker: SKIP"
+    ],
+    "fix": "Remove --privileged, use bridge networking, mount only needed dirs"
+  },
+  {
+    "id": "CLAW-09",
+    "title": "Agent Running as Root",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "container",
+    "owasp": "ASI-05",
+    "cve": "CVE-2019-5736",
+    "cwe": "CWE-250",
+    "atlas": "AML.T0050",
+    "nist": "AC-6",
+    "description": "Agent process running as UID 0 — any compromise is full system compromise",
+    "steps": [
+      "Check: id -u (or stat /proc/self if in container)",
+      "UID 0: VERIFIED FAIL. Non-root: PASS"
+    ],
+    "fix": "Run agent as unprivileged user: useradd -r openclaw && su openclaw"
+  },
+  {
+    "id": "CLAW-10",
+    "title": "Sandbox Configuration",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "config",
+    "owasp": "ASI-05",
+    "cwe": "CWE-693",
+    "atlas": "AML.T0048",
+    "nist": "CM-6",
+    "description": "No sandbox — agent code runs directly on host with full access",
+    "steps": [
+      "Read ~/.openclaw/openclaw.json → sandbox.mode",
+      "off/not set: FAIL. non-main: WARN. all + session scope: PASS. all + shared scope: WARN"
+    ],
+    "fix": "openclaw config set sandbox.mode all && openclaw config set sandbox.scope session"
+  },
+  {
+    "id": "CLAW-11",
+    "title": "Elevated Mode Restrictions",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "config",
+    "owasp": "ASI-05",
+    "cve": "CVE-2026-25049",
+    "cwe": "CWE-250",
+    "atlas": "AML.T0048",
+    "nist": "AC-6",
+    "description": "Elevated mode unrestricted — any session can escape the sandbox",
+    "steps": [
+      "Read ~/.openclaw/openclaw.json → tools.elevated",
+      "allowFrom * or all: FAIL. Restricted: PASS. Not configured: PASS"
+    ],
+    "fix": "openclaw config set tools.elevated.allowFrom [\"your-telegram-id\"]"
+  },
+  {
+    "id": "CLAW-12",
+    "title": "Config File Permissions",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "config",
+    "owasp": "ASI-03",
+    "cwe": "CWE-732",
+    "atlas": "AML.T0048",
+    "nist": "CM-6",
+    "description": "Config files readable by group or others — secrets exposed to other users",
+    "steps": [
+      "Check: ~/.openclaw/openclaw.json, ~/.openclaw/.env, ~/.openclaw/credentials/*, auth-profiles.json",
+      "Any > 600 (files) or > 700 (dirs): FAIL. All owner-only: PASS"
+    ],
+    "fix": "chmod 600 ~/.openclaw/openclaw.json ~/.openclaw/.env"
+  },
+  {
+    "id": "CLAW-13",
+    "title": "Installed Skills Threat Intel",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "supply-chain",
+    "owasp": "ASI-04",
+    "cve": "CVE-2025-6514",
+    "cwe": "CWE-1104",
+    "atlas": "AML.T0049",
+    "nist": "SI-3",
+    "description": "Known-malicious or unverified skills installed — supply chain risk",
+    "steps": [
+      "List ~/.openclaw/skills/",
+      "Check against: data-exfil, keylogger, reverse-shell, crypto-miner, credential-stealer, prompt-injector, shadow-agent, backdoor-tool, solana-wallet-tracker, polymarket-trader, token-sniper, atomic-stealer, openclaw-boost, free-credits, claw-premium, admin-tools",
+      "Also flag: no SKILL.md, modified last 24h, npm post-install scripts",
+      "Malicious: VERIFIED FAIL. 3+ unverified: WARN. Clean: PASS"
+    ],
+    "fix": "rm -rf ~/.openclaw/skills/<malicious-skill>"
+  },
+  {
+    "id": "CLAW-14",
+    "title": "MCP Server Vulnerabilities",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "mcp",
+    "owasp": "ASI-04",
+    "cve": "CVE-2025-6514",
+    "cwe": "CWE-78",
+    "atlas": "AML.T0049",
+    "nist": "SI-7",
+    "description": "MCP packages with known CVEs — remote code execution risk",
+    "steps": [
+      "Find MCP packages in agent config, node_modules, MCP config",
+      "mcp-remote < 1.1.0, @anthropic/mcp-inspector < 0.7.0, @anthropic/mcp-server-filesystem < 2.1.0, @anthropic/mcp-server-git < 2.1.0",
+      "Vulnerable: FAIL. No MCP: SKIP. All patched: PASS"
+    ],
+    "fix": "npm update mcp-remote @anthropic/mcp-inspector @anthropic/mcp-server-filesystem"
+  },
+  {
+    "id": "CLAW-15",
+    "title": "OpenClaw Version Security",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "config",
+    "owasp": "ASI-04",
+    "cwe": "CWE-1104",
+    "atlas": "AML.T0049",
+    "nist": "CM-6",
+    "description": "Running a version with known security vulnerabilities",
+    "steps": [
+      "openclaw --version or package.json",
+      "< 2.6.1: CVE-2026-25253 (RCE). < 2.5.0: path traversal",
+      "Vulnerable: FAIL. Current: PASS"
+    ],
+    "fix": "openclaw update"
+  },
+  {
+    "id": "CLAW-16",
+    "title": "Session File Permissions",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "config",
+    "owasp": "ASI-03",
+    "cwe": "CWE-538",
+    "atlas": "AML.T0048",
+    "nist": "CM-6",
+    "description": "Session files readable by others — conversation history exposed",
+    "steps": [
+      "Check ~/.openclaw/agents/*/sessions/ permissions",
+      "Readable by group/others: FAIL. Owner-only: PASS"
+    ],
+    "fix": "chmod -R 700 ~/.openclaw/agents/*/sessions/"
+  },
+  {
+    "id": "CLAW-17",
+    "title": "Default Credentials in Config",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "secrets",
+    "owasp": "ASI-03",
+    "cwe": "CWE-1392",
+    "atlas": "AML.T0056",
+    "nist": "IA-5",
+    "description": "Default or placeholder values in config — unchanged from template",
+    "steps": [
+      "Scan openclaw.json and .env for: change_me, default, placeholder, example, YOUR_, xxx, CHANGEME, TODO",
+      "Any match in a value field: FAIL. None found: PASS"
+    ],
+    "fix": "Replace all placeholder values with real credentials"
+  },
+  {
+    "id": "CLAW-18",
+    "title": ".env Not in .gitignore",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "config",
+    "owasp": "ASI-03",
+    "cwe": "CWE-538",
+    "atlas": "AML.T0048",
+    "nist": "CM-6",
+    "description": "Secret files not excluded from git — may be committed accidentally",
+    "steps": [
+      "Check if .env is listed in .gitignore (in cwd and in ~/.openclaw/)",
+      "Not present in .gitignore: FAIL. Present: PASS. Not a git repo: SKIP"
+    ],
+    "fix": "echo '.env' >> .gitignore && echo '.env.local' >> .gitignore"
+  },
+  {
+    "id": "CLAW-19",
+    "title": "Secrets in Git History",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "secrets",
+    "owasp": "ASI-03",
+    "cwe": "CWE-538",
+    "atlas": "AML.T0056",
+    "nist": "RA-5",
+    "description": "API keys or passwords found in git commit history — persist forever",
+    "steps": [
+      "Run: git log --all -p (last 50 commits) and search for API key patterns",
+      "Same patterns as CLAW-05: sk-, AKIA, ghp_, xoxb-, etc.",
+      "Found: FAIL (report commit hash, never the key). No git: SKIP. Clean: PASS"
+    ],
+    "fix": "git filter-branch or BFG Repo-Cleaner to remove secrets, then rotate keys"
+  },
+  {
+    "id": "CLAW-20",
+    "title": "Browser Profiles Accessible",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "identity",
+    "owasp": "ASI-03",
+    "cve": "CVE-2025-2783",
+    "cwe": "CWE-732",
+    "atlas": "AML.T0052",
+    "nist": "RA-5",
+    "description": "Chrome/Firefox/Brave profiles readable — saved passwords and cookies exposed",
+    "steps": [
+      "Test readable: ~/.config/google-chrome/, ~/.config/BraveSoftware/, ~/.mozilla/firefox/, ~/Library/Application Support/Google/Chrome/",
+      "Any readable: FAIL. None: PASS"
+    ],
+    "fix": "openclaw config set sandbox.mode all"
+  },
+  {
+    "id": "CLAW-21",
+    "title": "Git Credentials Accessible",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "secrets",
+    "owasp": "ASI-03",
+    "cwe": "CWE-256",
+    "atlas": "AML.T0056",
+    "nist": "RA-5",
+    "description": "Git credential files readable — repository tokens and passwords exposed",
+    "steps": [
+      "Test readable: ~/.git-credentials, ~/.gitconfig (check for credential helpers storing tokens)",
+      "Plaintext credentials found: FAIL. No credential files: PASS"
+    ],
+    "fix": "Use SSH keys instead, or credential-cache with short timeout"
+  },
+  {
+    "id": "CLAW-22",
+    "title": "Database Credentials Accessible",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "secrets",
+    "owasp": "ASI-03",
+    "cwe": "CWE-798",
+    "atlas": "AML.T0056",
+    "nist": "RA-5",
+    "description": "Database credential files readable — direct database access possible",
+    "steps": [
+      "Test readable: ~/.pgpass, ~/.my.cnf, ~/.mongosh/, ~/.redis-cli-history",
+      "Any found and readable: FAIL. None: PASS"
+    ],
+    "fix": "chmod 600 ~/.pgpass ~/.my.cnf && openclaw config set sandbox.mode all"
+  },
+  {
+    "id": "CLAW-23",
+    "title": "Additional Services on 0.0.0.0",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "network",
+    "owasp": "ASI-03",
+    "cwe": "CWE-1327",
+    "atlas": "AML.T0043",
+    "nist": "SC-7",
+    "description": "Other agent services bound to all interfaces — publicly reachable",
+    "steps": [
+      "Run: ss -tlnp or netstat -tlnp",
+      "Check for services on 0.0.0.0 or ::: at common agent ports (3000, 5000, 8000, 8080, 8888)",
+      "Any found: FAIL (list ports). None: PASS"
+    ],
+    "fix": "Bind services to 127.0.0.1 in their respective configs"
+  },
+  {
+    "id": "CLAW-24",
+    "title": "No Firewall Rules",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "network",
+    "owasp": "ASI-03",
+    "cwe": "CWE-284",
+    "atlas": "AML.T0048",
+    "nist": "SC-7",
+    "description": "No firewall configured — every listening port is exposed",
+    "steps": [
+      "Check: iptables -L -n, ufw status, nftables list",
+      "No rules or firewall inactive: FAIL. Active with rules: PASS. macOS with pf disabled: WARN"
+    ],
+    "fix": "ufw enable && ufw default deny incoming && ufw allow ssh"
+  },
+  {
+    "id": "CLAW-25",
+    "title": "Container Security Profile",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "container",
+    "owasp": "ASI-05",
+    "cve": "CVE-2025-31133",
+    "cwe": "CWE-250",
+    "atlas": "AML.T0050",
+    "nist": "SI-7",
+    "description": "No seccomp/AppArmor profile — container escape risk via runC CVEs",
+    "steps": [
+      "If in Docker: docker inspect → SecurityOpt",
+      "No seccomp or AppArmor profile (unconfined): FAIL. Profile applied: PASS. Not in container: SKIP"
+    ],
+    "fix": "Run with --security-opt seccomp=default --security-opt apparmor=docker-default"
+  },
+  {
+    "id": "CLAW-26",
+    "title": "Agent Code Integrity",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "supply-chain",
+    "owasp": "ASI-04",
+    "cwe": "CWE-494",
+    "atlas": "AML.T0049",
+    "nist": "CM-6",
+    "description": "Uncommitted modifications to agent source — potential backdoor",
+    "steps": [
+      "cd to agent install dir, run git status/diff",
+      "Uncommitted changes to source files: FAIL. Clean: PASS. Not a git repo: SKIP"
+    ],
+    "fix": "git diff to review changes, git checkout -- . to revert if unauthorized"
+  },
+  {
+    "id": "CLAW-27",
+    "title": "npm Lifecycle Scripts in Skills",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "supply-chain",
+    "owasp": "ASI-04",
+    "cwe": "CWE-829",
+    "atlas": "AML.T0049",
+    "nist": "SI-7",
+    "description": "Skills with lifecycle scripts — arbitrary code runs on install",
+    "steps": [
+      "For each skill in ~/.openclaw/skills/, check package.json for preinstall/postinstall/prepare scripts",
+      "Scripts found: WARN (list them). Known malicious patterns (curl|wget|eval|exec): VERIFIED FAIL. None: PASS"
+    ],
+    "fix": "Remove suspect skills and reinstall from verified sources"
+  },
+  {
+    "id": "CLAW-28",
+    "title": "Log Redaction",
+    "severity": "MEDIUM",
+    "points": 5,
+    "category": "config",
+    "owasp": "ASI-03",
+    "cve": "CVE-2026-22038",
+    "cwe": "CWE-532",
+    "atlas": "AML.T0048",
+    "nist": "AU-2",
+    "description": "Log redaction disabled — secrets may appear in log files",
+    "steps": [
+      "Read ~/.openclaw/openclaw.json → logging.redactSensitive",
+      "Not set or off: FAIL. tools (default): PASS"
+    ],
+    "fix": "openclaw config set logging.redactSensitive tools"
+  },
+  {
+    "id": "CLAW-29",
+    "title": "Debug Logging Enabled",
+    "severity": "MEDIUM",
+    "points": 5,
+    "category": "config",
+    "owasp": "ASI-03",
+    "cve": "CVE-2026-22038",
+    "cwe": "CWE-532",
+    "atlas": "AML.T0048",
+    "nist": "AU-2",
+    "description": "Debug/verbose logging active — extra data including payloads leaked to logs",
+    "steps": [
+      "Read ~/.openclaw/openclaw.json → logging.level",
+      "debug or verbose: FAIL. info/warn/error: PASS. Not set (defaults to info): PASS"
+    ],
+    "fix": "openclaw config set logging.level info"
+  },
+  {
+    "id": "CLAW-30",
+    "title": "Sessions Synced to Cloud",
+    "severity": "MEDIUM",
+    "points": 5,
+    "category": "observability",
+    "owasp": "ASI-03",
+    "cwe": "CWE-922",
+    "atlas": "AML.T0048",
+    "nist": "RA-5",
+    "description": "Session files inside cloud-synced folder — history uploaded to iCloud/Dropbox",
+    "steps": [
+      "Check if ~/.openclaw/ path contains: Mobile Documents, iCloud, Dropbox, Google Drive, OneDrive",
+      "Inside sync folder: FAIL. Outside: PASS"
+    ],
+    "fix": "Move ~/.openclaw/ outside synced folders, or add to .nosync"
+  },
+  {
+    "id": "CLAW-31",
+    "title": "MCP Tool Description Poisoning",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "mcp",
+    "owasp": "ASI-01",
+    "cve": "CVE-2025-6514",
+    "cwe": "CWE-94",
+    "atlas": "AML.T0051",
+    "nist": "SI-3",
+    "description": "Invisible Unicode in MCP tool descriptions can hijack agent behavior",
+    "steps": [
+      "Scan MCP config files for invisible Unicode (zero-width spaces, bidirectional overrides, tag characters)",
+      "Also scan for suspicious keywords: ignore previous, exfiltrate, override",
+      "Invisible Unicode found: VERIFIED FAIL. Suspicious keywords: WARN. Clean: PASS"
+    ],
+    "fix": "perl -CSD -pe 's/[\\\\x{200B}-\\\\x{200F}\\\\x{202A}-\\\\x{202E}\\\\x{2060}-\\\\x{2064}\\\\x{FEFF}]//g' -i ~/.openclaw/mcp/*.json"
+  },
+  {
+    "id": "CLAW-32",
+    "title": "MCP Tool Shadowing",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "mcp",
+    "owasp": "ASI-02",
+    "cwe": "CWE-349",
+    "atlas": "AML.T0051",
+    "nist": "SI-3",
+    "description": "Duplicate tool names across MCP servers — malicious server intercepts calls",
+    "steps": [
+      "Parse all MCP server configs, extract tool names",
+      "Build map of tool_name → [servers]. Any name in 2+ servers: VERIFIED FAIL",
+      "All unique: PASS. No MCP: SKIP"
+    ],
+    "fix": "openclaw mcp list-tools --check-duplicates && openclaw config set mcp.allowedServers [\"filesystem\",\"git\"]"
+  },
+  {
+    "id": "CLAW-33",
+    "title": "Unrestricted Outbound Network",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "network",
+    "owasp": "ASI-01",
+    "cwe": "CWE-941",
+    "atlas": "AML.T0043",
+    "nist": "SC-7",
+    "description": "No egress filtering — compromised agent can exfiltrate data to any server",
+    "steps": [
+      "Check network.allowedHosts in config. Not set or *: test outbound (curl httpbin.org)",
+      "Unrestricted outbound confirmed: VERIFIED FAIL. Allowlist configured: PASS"
+    ],
+    "fix": "openclaw config set network.allowedHosts [\"api.anthropic.com\",\"api.openai.com\"]"
+  },
+  {
+    "id": "CLAW-34",
+    "title": "Messaging Platform Token Exposure",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "secrets",
+    "owasp": "ASI-03",
+    "cwe": "CWE-522",
+    "atlas": "AML.T0056",
+    "nist": "IA-5",
+    "description": "Telegram/Slack/Discord tokens in plaintext config — full bot impersonation",
+    "steps": [
+      "Scan config and .env for: Telegram bot tokens (digits:base64), Slack (xoxb-/xoxp-), Discord tokens",
+      "Tokens found + lax file perms: FAIL. Tokens via env vars: PASS. None: PASS"
+    ],
+    "fix": "Move tokens to env vars, chmod 600 .env, rotate exposed tokens"
+  },
+  {
+    "id": "CLAW-35",
+    "title": "No User Namespace Isolation",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "container",
+    "owasp": "ASI-05",
+    "cve": "CVE-2025-31133",
+    "cwe": "CWE-269",
+    "atlas": "AML.T0050",
+    "nist": "SI-7",
+    "description": "Container root maps to host root — container escape is full host compromise",
+    "steps": [
+      "Check /proc/self/uid_map",
+      "0 0 4294967295 → no remapping: FAIL. Non-zero mapping: PASS. Not in Docker: SKIP"
+    ],
+    "fix": "Add \"userns-remap\": \"default\" to /etc/docker/daemon.json, restart Docker"
+  },
+  {
+    "id": "CLAW-36",
+    "title": "Dangerous CLI Flags in Startup",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "config",
+    "owasp": "ASI-05",
+    "cwe": "CWE-693",
+    "atlas": "AML.T0048",
+    "nist": "AC-6",
+    "description": "Agent started with --yolo or --dangerously-skip-permissions — zero protection",
+    "steps": [
+      "Check /proc/self/cmdline and startup scripts for: --dangerously-skip-permissions, --yolo, --trust-all-tools, --disable-sandbox",
+      "Check env vars: OPENCLAW_SKIP_PERMISSIONS, OPENCLAW_YOLO",
+      "Any found: VERIFIED FAIL. None: PASS"
+    ],
+    "fix": "Remove all dangerous flags. Use explicit, minimal permission grants instead."
+  },
+  {
+    "id": "CLAW-37",
+    "title": "Writable Agent Installation Directory",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "config",
+    "owasp": "ASI-04",
+    "cwe": "CWE-276",
+    "atlas": "AML.T0048",
+    "nist": "CM-6",
+    "description": "Agent can modify its own code — prompt injection can install persistent backdoor",
+    "steps": [
+      "Find OpenClaw install dir (dirname $(which openclaw))",
+      "test -w: writable → FAIL. Read-only: PASS. Not found: SKIP"
+    ],
+    "fix": "chown -R root:root /path/to/openclaw && chmod -R a-w /path/to/openclaw"
+  },
+  {
+    "id": "CLAW-38",
+    "title": "No Rate Limiting on Agent API",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "config",
+    "owasp": "ASI-03",
+    "cwe": "CWE-770",
+    "atlas": "AML.T0048",
+    "nist": "RA-5",
+    "description": "No rate limiting on gateway — Denial of Wallet attacks can run up LLM costs",
+    "steps": [
+      "Read gateway.rateLimit.enabled from config",
+      "Not set or false: FAIL. Enabled: PASS"
+    ],
+    "fix": "openclaw config set gateway.rateLimit.enabled true && openclaw config set gateway.rateLimit.maxPerMinute 60"
+  },
+  {
+    "id": "CLAW-39",
+    "title": "Cryptocurrency Wallet Files Accessible",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "secrets",
+    "owasp": "ASI-03",
+    "cwe": "CWE-732",
+    "atlas": "AML.T0056",
+    "nist": "RA-5",
+    "description": "Crypto wallet files readable by agent — funds can be drained irreversibly",
+    "steps": [
+      "Test readable: Exodus, Electrum, Bitcoin, Ethereum dirs (macOS + Linux)",
+      "Also search for seed/mnemonic/recovery files in home dir",
+      "2+: VERIFIED FAIL. 1: WARN. None: PASS"
+    ],
+    "fix": "chmod 700 ~/.bitcoin ~/.ethereum ~/.electrum; run agent as dedicated user"
+  },
+  {
+    "id": "CLAW-40",
+    "title": "Unsafe Deserialization in Dependencies",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "identity",
+    "owasp": "ASI-04",
+    "cwe": "CWE-502",
+    "atlas": "AML.T0052",
+    "nist": "RA-5",
+    "description": "Vulnerable langchain-core or unsafe yaml.load in skills — RCE via prompt injection",
+    "steps": [
+      "Check langchain-core version: < 0.3.81 or 1.0-1.2.4 → FAIL",
+      "Scan skills for yaml.load (not safe_load) → FAIL",
+      "All clean: PASS"
+    ],
+    "fix": "pip install 'langchain-core>=0.3.81' && replace yaml.load with yaml.safe_load"
+  },
+  {
+    "id": "CLAW-41",
+    "title": "No Container Read-Only Filesystem",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "container",
+    "owasp": "ASI-05",
+    "cwe": "CWE-732",
+    "atlas": "AML.T0050",
+    "nist": "SI-7",
+    "description": "Writable container filesystem — compromised agent can install persistent malware",
+    "steps": [
+      "Check /proc/mounts for root filesystem",
+      "ro flag: PASS. rw: FAIL. Not in Docker: SKIP"
+    ],
+    "fix": "docker run --read-only --tmpfs /tmp:rw,noexec,nosuid ..."
+  },
+  {
+    "id": "CLAW-42",
+    "title": "Skill Network Access Unrestricted",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "network",
+    "owasp": "ASI-02",
+    "cwe": "CWE-284",
+    "atlas": "AML.T0043",
+    "nist": "SC-7",
+    "description": "No per-skill network permissions — any skill can exfiltrate data externally",
+    "steps": [
+      "Read plugins.permissions and plugins.defaultDeny from config",
+      "No per-skill permissions: FAIL. defaultDeny includes network: PASS"
+    ],
+    "fix": "openclaw config set plugins.defaultDeny network"
+  },
+  {
+    "id": "CLAW-43",
+    "title": "Unencrypted Session Storage",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "config",
+    "owasp": "ASI-03",
+    "cwe": "CWE-311",
+    "atlas": "AML.T0048",
+    "nist": "RA-5",
+    "description": "Session files stored unencrypted — disk compromise exposes full conversation history",
+    "steps": [
+      "Read sessions.encryptAtRest from config",
+      "Not set or false: FAIL (if sessions exist). Enabled: PASS"
+    ],
+    "fix": "openclaw config set sessions.encryptAtRest true"
+  },
+  {
+    "id": "CLAW-44",
+    "title": "Rules File Injection",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "persistence",
+    "owasp": "ASI-01",
+    "cwe": "CWE-94",
+    "atlas": "AML.T0051",
+    "nist": "SI-3",
+    "description": "CLAUDE.md or rules files contain invisible Unicode or suspicious injection patterns",
+    "steps": [
+      "Scan CLAUDE.md, .openclaw/rules.md, agent system prompts",
+      "Check for invisible Unicode, injection keywords, suspiciously long lines",
+      "Invisible Unicode: VERIFIED FAIL. Suspicious keywords: WARN. Clean: PASS"
+    ],
+    "fix": "perl -CSD -pe 's/[\\\\x{200B}-\\\\x{200F}\\\\x{202A}-\\\\x{202E}]//g' -i CLAUDE.md"
+  },
+  {
+    "id": "CLAW-45",
+    "title": "Stale or Unrotated API Keys",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "secrets",
+    "owasp": "ASI-03",
+    "cwe": "CWE-324",
+    "atlas": "AML.T0056",
+    "nist": "IA-5",
+    "description": "Credential files not modified in 90+ days — extended window for stolen key abuse",
+    "steps": [
+      "Check last modification time of .env and openclaw.json",
+      "> 90 days: FAIL. 30-90: WARN. < 30: PASS"
+    ],
+    "fix": "Rotate API keys now, set auth.rotationReminder 30"
+  },
+  {
+    "id": "CLAW-46",
+    "title": "npm Audit Vulnerabilities",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "supply-chain",
+    "owasp": "ASI-04",
+    "cwe": "CWE-1104",
+    "atlas": "AML.T0049",
+    "nist": "SI-7",
+    "description": "Known vulnerabilities in agent npm dependencies — supply chain risk",
+    "steps": [
+      "Run npm audit in agent directory and skill directories",
+      "Critical/high vulns: FAIL. Moderate/low: WARN. Clean: PASS"
+    ],
+    "fix": "npm audit fix && npm audit fix --force"
+  },
+  {
+    "id": "CLAW-47",
+    "title": "Excessive Tool Permissions",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "config",
+    "owasp": "ASI-02",
+    "cwe": "CWE-250",
+    "atlas": "AML.T0048",
+    "nist": "AC-6",
+    "description": "Wildcard tool permissions — agent can write anywhere, execute anything",
+    "steps": [
+      "Check tools.filesystem.write, tools.execute.allowed, tools.network.outbound",
+      "3+ wildcard categories: FAIL. 1-2: WARN. All scoped: PASS"
+    ],
+    "fix": "openclaw config set tools.defaultPolicy deny"
+  },
+  {
+    "id": "CLAW-48",
+    "title": "Insecure MCP Transport",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "network",
+    "owasp": "ASI-07",
+    "cwe": "CWE-319",
+    "atlas": "AML.T0043",
+    "nist": "SC-7",
+    "description": "Remote MCP servers connected via HTTP — tool data transmitted in cleartext",
+    "steps": [
+      "Parse MCP configs for http:// URLs (excluding localhost/127.0.0.1)",
+      "Remote HTTP found: FAIL. All HTTPS or local: PASS"
+    ],
+    "fix": "Replace http:// with https:// in MCP config, or use stdio transport"
+  },
+  {
+    "id": "CLAW-49",
+    "title": "No Process Resource Limits",
+    "severity": "MEDIUM",
+    "points": 5,
+    "category": "container",
+    "owasp": "ASI-05",
+    "cwe": "CWE-400",
+    "atlas": "AML.T0050",
+    "nist": "SI-7",
+    "description": "No ulimits or cgroup limits — runaway agent can exhaust all host resources",
+    "steps": [
+      "Check ulimit -u (processes), ulimit -n (files), cgroup memory limit",
+      "Multiple unlimited: FAIL. Partial: WARN. All limited: PASS"
+    ],
+    "fix": "docker run --memory=2g --cpus=2 --pids-limit=256 ... OR ulimit -n 4096 -u 256"
+  },
+  {
+    "id": "CLAW-50",
+    "title": "Exposed Health/Debug Endpoints",
+    "severity": "MEDIUM",
+    "points": 5,
+    "category": "config",
+    "owasp": "ASI-03",
+    "cwe": "CWE-215",
+    "atlas": "AML.T0048",
+    "nist": "AU-2",
+    "description": "Debug or config endpoints return 200 — internal state leaked to attackers",
+    "steps": [
+      "Probe gateway at common endpoints: /debug, /env, /config, /admin, /metrics",
+      "Any debug/env/config returns 200: FAIL. Only /health: PASS. Gateway not running: SKIP"
+    ],
+    "fix": "openclaw config set server.debug false && openclaw config set server.disableEndpoints [\"debug\",\"env\",\"config\"]"
+  },
+  {
+    "id": "CLAW-51",
+    "title": "WebSocket Origin Validation (CSWSH)",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "network",
+    "owasp": "ASI-03",
+    "cwe": "CWE-346",
+    "atlas": "AML.T0043",
+    "nist": "SC-7",
+    "description": "Gateway accepts WebSocket connections from any origin — cross-site hijacking possible",
+    "steps": [
+      "Send WebSocket upgrade with Origin: https://evil.example.com",
+      "HTTP 101 accepted: VERIFIED FAIL. Rejected: PASS. Gateway not running: check gateway.cors.allowedOrigins in config"
+    ],
+    "fix": "openclaw config set gateway.cors.allowedOrigins [\"https://your-domain.com\"]"
+  },
+  {
+    "id": "CLAW-52",
+    "title": "LLM Endpoint Integrity",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "config",
+    "owasp": "ASI-01",
+    "cwe": "CWE-345",
+    "atlas": "AML.T0048",
+    "nist": "RA-5",
+    "description": "API base URLs in config do not match expected providers — possible man-in-the-middle",
+    "steps": [
+      "Read API base URLs from config and env (ANTHROPIC_BASE_URL, OPENAI_BASE_URL, etc.)",
+      "Check against known providers: api.anthropic.com, api.openai.com, etc.",
+      "Flag HTTP_PROXY/HTTPS_PROXY overrides and NODE_TLS_REJECT_UNAUTHORIZED=0",
+      "Custom/unknown base URL or proxy override: FAIL. Known providers only: PASS"
+    ],
+    "fix": "Remove custom base URLs, unset HTTP_PROXY/HTTPS_PROXY, unset NODE_TLS_REJECT_UNAUTHORIZED"
+  },
+  {
+    "id": "CLAW-53",
+    "title": "Credential Routing Through LLM Context",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "secrets",
+    "owasp": "ASI-03",
+    "cwe": "CWE-522",
+    "atlas": "AML.T0056",
+    "nist": "RA-5",
+    "description": "Skill instructions route secrets through the LLM prompt — credentials exposed in context window",
+    "steps": [
+      "Scan SKILL.md and README.md in ~/.openclaw/skills/*/",
+      "Search for patterns: 'include your API key', 'paste your token', 'pass your credentials in the message'",
+      "Pattern found: FAIL. No skills or clean: PASS"
+    ],
+    "fix": "Refactor skills to read credentials from env vars or config, never from the context window"
+  },
+  {
+    "id": "CLAW-54",
+    "title": "Persistent Memory Poisoning",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "persistence",
+    "owasp": "ASI-06",
+    "cwe": "CWE-94",
+    "atlas": "AML.T0051",
+    "nist": "SI-3",
+    "description": "Injection markers found in memory or context files — persistent prompt injection risk",
+    "steps": [
+      "Scan ~/.openclaw/memory/, CLAUDE.md, .claude/memory/ for injection markers",
+      "Check for: 'ignore previous instructions', base64 payloads, zero-width Unicode",
+      "Injection markers found: VERIFIED FAIL. Suspicious patterns: WARN. Clean: PASS"
+    ],
+    "fix": "Review and clean memory files, remove injected content, rotate compromised sessions"
+  },
+  {
+    "id": "CLAW-55",
+    "title": "Auto-Approval Beyond --yolo",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "config",
+    "owasp": "ASI-02",
+    "cwe": "CWE-863",
+    "atlas": "AML.T0048",
+    "nist": "AC-6",
+    "description": "Per-category auto-approve or allowedTools wildcards bypass tool confirmation",
+    "steps": [
+      "Check OpenClaw config for autoApprove, allowedTools: '*'",
+      "Check Claude Code settings and MCP configs for per-category auto-approve",
+      "Wildcard or broad auto-approve found: FAIL. No auto-approve: PASS"
+    ],
+    "fix": "Remove autoApprove flags and wildcard allowedTools, use explicit per-tool permissions"
+  },
+  {
+    "id": "CLAW-56",
+    "title": "Semantic Tool Description Poisoning",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "mcp",
+    "owasp": "ASI-01",
+    "cve": "CVE-2025-6514",
+    "cwe": "CWE-94",
+    "atlas": "AML.T0051",
+    "nist": "SI-3",
+    "description": "MCP tool descriptions contain exfiltration instructions or data harvesting patterns",
+    "steps": [
+      "Scan MCP tool configs and skill definitions for social engineering patterns",
+      "Check for: 'read ~/.ssh', 'include API key', 'before using this tool first', 'exfiltrate', 'send to'",
+      "Pattern found: FAIL. Clean: PASS"
+    ],
+    "fix": "Remove or rewrite suspicious tool descriptions, audit skill sources"
+  },
+  {
+    "id": "CLAW-57",
+    "title": "Tool Definition Pinning (Rug-Pull)",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "mcp",
+    "owasp": "ASI-04",
+    "cwe": "CWE-494",
+    "atlas": "AML.T0049",
+    "nist": "SI-7",
+    "description": "No integrity check on tool definitions — server can change tool behavior after approval",
+    "steps": [
+      "Check MCP configs for tool definition hashes, pinning, or version locks",
+      "No integrity mechanism: WARN. Hashes or pinning configured: PASS"
+    ],
+    "fix": "Pin MCP tool definitions with hashes or version locks where supported"
+  },
+  {
+    "id": "CLAW-58",
+    "title": "MCP Credential Hygiene",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "secrets",
+    "owasp": "ASI-03",
+    "cwe": "CWE-522",
+    "atlas": "AML.T0056",
+    "nist": "IA-5",
+    "description": "MCP servers use long-lived PATs instead of short-lived OAuth tokens",
+    "steps": [
+      "Parse MCP server configs for token patterns: ghp_, glpat-, xoxb-, xoxp-",
+      "Check OAuth scopes for overly broad permissions: admin, org, write:all",
+      "Check for inline secrets in config",
+      "Long-lived tokens or broad scopes: FAIL. Narrow scopes, short-lived: PASS"
+    ],
+    "fix": "Replace long-lived tokens with short-lived ones, narrow OAuth scopes to minimum required"
+  },
+  {
+    "id": "CLAW-59",
+    "title": "Dormant Payload Detection",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "persistence",
+    "owasp": "ASI-01",
+    "cwe": "CWE-506",
+    "atlas": "AML.T0051",
+    "nist": "SI-3",
+    "description": "Conditional or time-based triggers found in persistent context — delayed attack risk",
+    "steps": [
+      "Scan persistent context files for conditional triggers",
+      "Check for: 'if date is after', 'when the user asks about', base64 near conditionals",
+      "Trigger patterns found: VERIFIED FAIL. Suspicious patterns: WARN. Clean: PASS"
+    ],
+    "fix": "Review and remove conditional payloads from context files, reset memory"
+  },
+  {
+    "id": "CLAW-60",
+    "title": "Observability Endpoint Security",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "network",
+    "owasp": "ASI-10",
+    "cwe": "CWE-319",
+    "atlas": "AML.T0043",
+    "nist": "AU-2",
+    "description": "Telemetry endpoints use HTTP or have known CVEs — trace data exposed",
+    "steps": [
+      "Check config and env for telemetry endpoints: LANGSMITH_ENDPOINT, LANGFUSE_HOST, HELICONE_BASE_URL",
+      "HTTP endpoint found: FAIL. HTTPS or no telemetry: PASS"
+    ],
+    "fix": "Update telemetry endpoints to use HTTPS"
+  },
+  {
+    "id": "CLAW-61",
+    "title": "Skill Typosquatting Detection",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "supply-chain",
+    "owasp": "ASI-04",
+    "cwe": "CWE-426",
+    "atlas": "AML.T0049",
+    "nist": "SI-3",
+    "description": "Installed skill name is suspiciously similar to a popular skill — possible typosquatting",
+    "steps": [
+      "List installed skills in ~/.openclaw/skills/",
+      "Compare names against known popular skills using edit distance 1-2",
+      "Near-match found (edit distance 1-2): WARN. Exact malicious match: FAIL. All clean: PASS"
+    ],
+    "fix": "Remove typosquatted skills and install from verified sources"
+  },
+  {
+    "id": "CLAW-62",
+    "title": "Sandbox Runtime Detection",
+    "severity": "MEDIUM",
+    "points": 5,
+    "category": "container",
+    "owasp": "ASI-05",
+    "cwe": "CWE-693",
+    "atlas": "AML.T0050",
+    "nist": "SI-7",
+    "description": "Container uses default runc runtime — weaker isolation than gVisor or Firecracker",
+    "steps": [
+      "Detect container runtime: check for /proc/self/status gVisor markers, /sys/hypervisor for Firecracker",
+      "runc: WARN (note stronger alternatives). gVisor or Firecracker: PASS. Not in container: SKIP"
+    ],
+    "fix": "Switch to gVisor (runsc) or Firecracker for stronger container isolation"
+  },
+  {
+    "id": "CLAW-63",
+    "title": "Writable Persistence Paths",
+    "severity": "MEDIUM",
+    "points": 5,
+    "category": "persistence",
+    "owasp": "ASI-05",
+    "cwe": "CWE-276",
+    "atlas": "AML.T0048",
+    "nist": "SI-3",
+    "description": "Agent can write to crontab, shell configs, or launch agents — persistence vector for injected payloads",
+    "steps": [
+      "Test writable: ~/.bashrc, ~/.zshrc, ~/.profile, ~/Library/LaunchAgents/, ~/.config/systemd/user/",
+      "Check cron write access: crontab -l",
+      "3+: VERIFIED FAIL. 1-2: WARN. None: PASS"
+    ],
+    "fix": "Run agent as dedicated user without write access to shell configs and startup dirs"
+  },
+  {
+    "id": "CLAW-64",
+    "title": "Active C2 Connection Detection",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "network",
+    "owasp": "ASI-03",
+    "description": "Check active network connections against known C2 infrastructure IPs from the ClawHavoc campaign.",
+    "steps": [
+      "Check active network connections against known C2 IP list",
+      "Match found: VERIFIED FAIL. No matches: PASS"
+    ],
+    "fix": "Kill suspicious connections: ss -tlnp | grep <C2_IP> && kill <PID>"
+  },
+  {
+    "id": "CLAW-65",
+    "title": "Malware Signature Scan",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "supply-chain",
+    "owasp": "ASI-04",
+    "cwe": "CWE-506",
+    "description": "Scan installed skills for AMOS stealer patterns, reverse shell markers, and known malicious file hashes.",
+    "steps": [
+      "Scan installed skills for AMOS stealer signatures and known malicious hashes",
+      "Malware signature found: VERIFIED FAIL. Clean: PASS"
+    ],
+    "fix": "rm -rf ~/.openclaw/skills/<infected-skill> && rotate all credentials"
+  },
+  {
+    "id": "CLAW-66",
+    "title": "Exfiltration Domain References",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "supply-chain",
+    "owasp": "ASI-04",
+    "cwe": "CWE-200",
+    "description": "Check skill files for references to known exfiltration services (webhook.site, pipedream.net, ngrok.io, etc.).",
+    "steps": [
+      "Scan skill source files for known exfiltration domains: webhook.site, ngrok.io, requestbin.com, pipedream.com, burpcollaborator.net",
+      "Domain reference found: FAIL. Clean: PASS"
+    ],
+    "fix": "Remove or replace skills referencing exfiltration domains"
+  },
+  {
+    "id": "CLAW-67",
+    "title": "VS Code Extension Trojans",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "supply-chain",
+    "owasp": "ASI-04",
+    "cwe": "CWE-506",
+    "description": "Detect fake OpenClaw VS Code extensions — OpenClaw has no official extension, so any match is malicious.",
+    "steps": [
+      "Check installed VS Code extensions for OpenClaw-related names",
+      "Any OpenClaw extension found: VERIFIED FAIL (OpenClaw has no official extension). None: PASS. VS Code not installed: SKIP"
+    ],
+    "fix": "code --uninstall-extension <fake-extension-id> && rotate credentials"
+  },
+  {
+    "id": "CLAW-68",
+    "title": "Gateway Device Auth Bypass",
+    "severity": "CRITICAL",
+    "points": 15,
+    "category": "config",
+    "owasp": "ASI-03",
+    "description": "Check if dangerouslyDisableDeviceAuth is enabled or if LAN-bound gateway lacks trustedProxies config.",
+    "steps": [
+      "Read ~/.openclaw/openclaw.json → gateway.dangerouslyDisableDeviceAuth and gateway.trustedProxies",
+      "dangerouslyDisableDeviceAuth=true or trustedProxies contains *: VERIFIED FAIL. Both secure: PASS"
+    ],
+    "fix": "openclaw config set gateway.dangerouslyDisableDeviceAuth false && openclaw config set gateway.trustedProxies '[]'"
+  },
+  {
+    "id": "CLAW-69",
+    "title": "Exec-Approvals Hardening",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "config",
+    "owasp": "ASI-05",
+    "description": "Verify exec-approvals.json doesn't have allow-all security settings or disabled confirmation prompts.",
+    "steps": [
+      "Read exec-approvals.json or equivalent approval config",
+      "Wildcard approvals or approve-all patterns: FAIL. Scoped approvals: PASS. No file: SKIP"
+    ],
+    "fix": "Restrict exec-approvals.json to specific commands and paths"
+  },
+  {
+    "id": "CLAW-70",
+    "title": "mDNS/Bonjour Exposure",
+    "severity": "MEDIUM",
+    "points": 5,
+    "category": "network",
+    "owasp": "ASI-03",
+    "description": "Check if mDNS broadcasting is in 'full' mode, which exposes file paths and SSH ports to the local network.",
+    "steps": [
+      "Check for mDNS/Bonjour service advertisements related to OpenClaw",
+      "Broadcasting agent paths/ports: FAIL. No mDNS advertisements: PASS. mDNS not available: SKIP"
+    ],
+    "fix": "Disable mDNS advertisement for agent services or restrict to loopback"
+  },
+  {
+    "id": "CLAW-71",
+    "title": "DM Channel Restrictions",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "config",
+    "owasp": "ASI-03",
+    "description": "Check messaging channel DM policies for open access — channels with dmPolicy='open' or wildcard allowFrom let anyone message the agent.",
+    "steps": [
+      "Read channel config for DM policies",
+      "Unrestricted DM access or no DM policy: FAIL. DM restricted to approved contacts: PASS"
+    ],
+    "fix": "openclaw config set channels.dm.policy restricted"
+  },
+  {
+    "id": "CLAW-72",
+    "title": "Known Malicious Publishers",
+    "severity": "HIGH",
+    "points": 10,
+    "category": "supply-chain",
+    "owasp": "ASI-04",
+    "cwe": "CWE-506",
+    "description": "Check installed skill package.json files against a blacklist of known malicious ClawHub publishers.",
+    "steps": [
+      "List installed skills and extract publisher/author metadata",
+      "Check against known malicious publisher blacklist",
+      "Blacklisted publisher found: VERIFIED FAIL. All clean: PASS"
+    ],
+    "fix": "rm -rf ~/.openclaw/skills/<blacklisted-skill> && openclaw skills install <verified-alternative>"
+  }
+]
