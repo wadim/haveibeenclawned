@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   title: "Have I Been Clawned? — Free OpenClaw Security Audit",
   description:
     "Run 72 security checks on your OpenClaw agent in 60 seconds. Find out if your secrets, container, network, and MCP supply chain are exposed.",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
   openGraph: {
     title: "Have I Been Clawned?",
     description:
@@ -16,12 +20,14 @@ export const metadata: Metadata = {
     url: "https://haveibeenclawned.com",
     siteName: "Have I Been Clawned?",
     type: "website",
+    images: [{ url: "https://haveibeenclawned.com/og-image.png", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Have I Been Clawned?",
     description:
       "Free security audit for OpenClaw agents. 72 checks, 60 seconds, one grade.",
+    images: ["https://haveibeenclawned.com/og-image.png"],
   },
 };
 
