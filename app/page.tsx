@@ -125,8 +125,12 @@ export default function HaveIBeenClawnedPage() {
       {/* Footer */}
       <footer className="border-t border-border/50 py-8 px-4">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p>
-            An open source project for the OpenClaw community
+          <p className="flex items-center gap-2">
+            <a href="https://linkedin.com/in/wadimgrasza" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Wadim Grasza</a>
+            <span className="text-muted-foreground/30">&middot;</span>
+            <a href="https://github.com/wadim/haveibeenclawned" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">GitHub</a>
+            <span className="text-muted-foreground/30">&middot;</span>
+            <a href="https://github.com/wadim/haveibeenclawned/security/policy" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Security Policy</a>
           </p>
           <p className="text-muted-foreground/60">
             Not affiliated with haveibeenpwned.com

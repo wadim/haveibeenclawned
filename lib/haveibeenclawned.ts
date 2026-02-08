@@ -1125,6 +1125,8 @@ interface KVStats {
   scoreSum: number;
   criticalCount: number;
   grades: Record<Grade, number>;
+  /** Per-check fail counts (index matches CHECKS array) */
+  failCounts?: number[];
 }
 
 const EMPTY_KV_STATS: KVStats = {
@@ -1132,6 +1134,7 @@ const EMPTY_KV_STATS: KVStats = {
   scoreSum: 0,
   criticalCount: 0,
   grades: { A: 0, B: 0, C: 0, D: 0, F: 0 },
+  failCounts: [],
 };
 
 function kvBaseUrl(): string {
@@ -1196,6 +1199,14 @@ export async function recordSubmission(ip: string, payload: SubmitPayload): Prom
   stats.scoreSum += payload.s;
   stats.grades[payload.g]++;
 
+  // Per-check fail tracking
+  if (!stats.failCounts || stats.failCounts.length === 0) {
+    stats.failCounts = new Array(CHECKS.length).fill(0);
+  }
+  for (let i = 0; i < payload.r.length && i < CHECKS.length; i++) {
+    if (payload.r[i] === 0) stats.failCounts[i]++;
+  }
+
   const hasCriticalFail = payload.r.some(
     (r, i) => r === 0 && i < CHECKS.length && CHECKS[i].severity === "CRITICAL"
   );
@@ -1214,6 +1225,7 @@ export interface AggregateStats {
   avgScore: number;
   criticalPct: number;
   grades: Record<Grade, number>;
+  topIssues: { id: string; label: string; severity: Severity; failPct: number }[];
 }
 
 export async function getAggregateStats(): Promise<AggregateStats> {
@@ -1225,13 +1237,26 @@ export async function getAggregateStats(): Promise<AggregateStats> {
       avgScore: 0,
       criticalPct: 0,
       grades: { A: 0, B: 0, C: 0, D: 0, F: 0 },
+      topIssues: [],
     };
   }
+
+  const topIssues = (stats.failCounts || [])
+    .map((count, i) => ({
+      id: CHECKS[i].id,
+      label: CHECKS[i].label,
+      severity: CHECKS[i].severity,
+      failPct: Math.round((count / stats.totalScans) * 100),
+    }))
+    .filter((c) => c.failPct > 0)
+    .sort((a, b) => b.failPct - a.failPct)
+    .slice(0, 10);
 
   return {
     totalScans: stats.totalScans,
     avgScore: Math.round(stats.scoreSum / stats.totalScans),
     criticalPct: Math.round((stats.criticalCount / stats.totalScans) * 100),
     grades: stats.grades,
+    topIssues,
   };
 }
