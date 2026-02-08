@@ -33,13 +33,16 @@ export default function HaveIBeenClawnedPage() {
             Free security audit for OpenClaw agents
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold text-foreground tracking-tight mb-6">
-            Have I Been
-            <br />
-            <span className="bg-gradient-to-r from-red-500/90 to-orange-500/90 bg-clip-text text-transparent">
-              Clawned
+          <h1 className="text-5xl md:text-7xl font-bold text-foreground tracking-tight mb-6 flex items-center justify-center gap-5">
+            <img src="/logo.png" alt="" width={160} height={160} className="shrink-0" />
+            <span>
+              Have I Been
+              <br />
+              <span className="bg-gradient-to-r from-red-500/90 to-orange-500/90 bg-clip-text text-transparent">
+                Clawned
+              </span>
+              ?
             </span>
-            ?
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-4">
