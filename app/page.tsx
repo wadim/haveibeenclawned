@@ -10,7 +10,8 @@ export default function HaveIBeenClawnedPage() {
       {/* Nav */}
       <header className="border-b border-border/50">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <span className="text-sm font-medium text-foreground">
+          <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <img src="/logo.png" alt="" width={24} height={24} className="rounded-sm" />
             Have I Been Clawned?
           </span>
           <a
