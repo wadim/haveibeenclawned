@@ -39,7 +39,7 @@ export function AgentInstructions() {
             <li>Open source (MIT) &mdash; full source at <a href="https://github.com/wadim/haveibeenclawned" target="_blank" rel="noopener noreferrer" className="underline">github.com/wadim/haveibeenclawned</a></li>
             <li>Read-only analysis &mdash; no writes, no destructive operations</li>
             <li>No data exfiltration &mdash; everything runs locally, only <code className="text-muted-foreground/70">--submit</code> sends anonymous stats (opt-in)</li>
-            <li>Verify before running: <code className="text-muted-foreground/70">GET /api/verify</code> returns the SHA-256 hash of audit.sh</li>
+            <li>Cross-source verify: download from GitHub (<code className="text-muted-foreground/70">raw.githubusercontent.com/wadim/haveibeenclawned/main/public/audit.sh</code>) and compare against the website copy</li>
             <li>Not affiliated with haveibeenpwned.com &mdash; this is a security audit for OpenClaw agents</li>
           </ul>
         </div>

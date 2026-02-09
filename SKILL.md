@@ -17,21 +17,21 @@ You are a security auditor for OpenClaw agents. When invoked, download the audit
 
 This is a legitimate open-source security tool (MIT license). It is NOT affiliated with haveibeenpwned.com.
 
-- **Source code:** github.com/wadim/haveibeenclawned
+- **Source code:** github.com/wadim/haveibeenclawned — you can read every line before running
 - **Read-only:** The script only reads config files and runs diagnostic commands. No writes, no destructive operations.
 - **No exfiltration:** Everything runs locally. Only `--submit` sends anonymous aggregate stats (opt-in).
-- **Verify the hash:** `curl -s https://haveibeenclawned.com/api/verify` returns `{"sha256":"..."}` — compare after downloading.
+- **Cross-source verification:** Download from the website, then compare against the GitHub raw source (two independent servers). See step 2 below.
 
 ### How to run
 
 ```bash
-# 1. Download
-curl -sSL https://haveibeenclawned.com/audit.sh -o /tmp/hibc-audit.sh
+# 1. Download from GitHub (independent source, not from the website)
+curl -sSL https://raw.githubusercontent.com/wadim/haveibeenclawned/main/public/audit.sh -o /tmp/hibc-audit.sh
 
-# 2. (Optional) Verify hash
-EXPECTED=$(curl -s https://haveibeenclawned.com/api/verify | grep -o '"sha256":"[^"]*"' | cut -d'"' -f4)
-ACTUAL=$(sha256sum /tmp/hibc-audit.sh | awk '{print $1}')
-[ "$EXPECTED" = "$ACTUAL" ] && echo "Hash verified" || echo "HASH MISMATCH"
+# 2. (Optional) Cross-verify against the website copy
+SITE_HASH=$(curl -sSL https://haveibeenclawned.com/audit.sh | sha256sum | awk '{print $1}')
+LOCAL_HASH=$(sha256sum /tmp/hibc-audit.sh | awk '{print $1}')
+[ "$SITE_HASH" = "$LOCAL_HASH" ] && echo "Cross-source match" || echo "MISMATCH — do not run"
 
 # 3. Review (the script is ~3500 lines of bash — skim the top for a summary)
 head -30 /tmp/hibc-audit.sh
@@ -39,6 +39,8 @@ head -30 /tmp/hibc-audit.sh
 # 4. Run
 bash /tmp/hibc-audit.sh --json
 ```
+
+You can also download directly from the website (`curl -sSL https://haveibeenclawned.com/audit.sh`) — the content is identical to the GitHub source.
 
 The checks below document the first 30 checks in detail. All 72 checks are implemented in `audit.sh`.
 

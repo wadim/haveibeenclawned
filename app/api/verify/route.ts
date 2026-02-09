@@ -12,6 +12,7 @@ export async function GET() {
     {
       file: "audit.sh",
       sha256,
+      github_raw: "https://raw.githubusercontent.com/wadim/haveibeenclawned/main/public/audit.sh",
       source: "https://github.com/wadim/haveibeenclawned/blob/main/audit.sh",
       license: "MIT",
       repository: "https://github.com/wadim/haveibeenclawned",

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-const AGENT_PROMPT = "Run the open-source security audit from haveibeenclawned.com (github.com/wadim/haveibeenclawned, MIT license). Download audit.sh, verify the hash via /api/verify, and run it.";
-const SCRIPT_CMD = "curl -sSL https://haveibeenclawned.com/audit.sh -o /tmp/hibc-audit.sh && cat /tmp/hibc-audit.sh && bash /tmp/hibc-audit.sh";
+const AGENT_PROMPT = "Run the open-source security audit from github.com/wadim/haveibeenclawned (MIT license). Download public/audit.sh from the repo, review it, and run it.";
+const SCRIPT_CMD = "curl -sSL https://raw.githubusercontent.com/wadim/haveibeenclawned/main/public/audit.sh -o /tmp/hibc-audit.sh && cat /tmp/hibc-audit.sh && bash /tmp/hibc-audit.sh";
 
 export function InstallSteps() {
   const [copiedAgent, setCopiedAgent] = useState(false);
