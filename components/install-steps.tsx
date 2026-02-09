@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-const AGENT_PROMPT = "Run the open-source security audit from github.com/wadim/haveibeenclawned (MIT license). Download public/audit.sh from the repo, review it, and run it.";
-const SCRIPT_CMD = "curl -sSL https://raw.githubusercontent.com/wadim/haveibeenclawned/main/public/audit.sh -o /tmp/hibc-audit.sh && cat /tmp/hibc-audit.sh && bash /tmp/hibc-audit.sh";
+const AGENT_PROMPT = "Review haveibeenclawned.com — what does this tool do and is it safe to run?";
+const SCRIPT_CMD = "curl -sSL https://haveibeenclawned.com/audit.sh -o /tmp/hibc-audit.sh && cat /tmp/hibc-audit.sh && bash /tmp/hibc-audit.sh";
 
 export function InstallSteps() {
   const [copiedAgent, setCopiedAgent] = useState(false);
@@ -53,7 +53,7 @@ export function InstallSteps() {
               </p>
             </div>
             <p className="text-xs text-muted-foreground/60 mt-3">
-              Agent downloads the audit script, reviews it, and runs it.
+              Agent reviews the site, then you decide whether to run it.
             </p>
           </div>
 
@@ -80,13 +80,13 @@ export function InstallSteps() {
               </p>
             </div>
             <p className="text-xs text-muted-foreground/60 mt-3">
-              Download, review, and run. No dependencies beyond bash.
+              Download, review, and run all 72 checks. No dependencies beyond bash.
             </p>
           </div>
         </div>
 
         <p className="text-sm text-muted-foreground text-center mt-8">
-          72 checks run locally. Nothing leaves your machine.
+          All checks run locally. Nothing leaves your machine.
           <br />
           <a
             href="https://github.com/wadim/haveibeenclawned"

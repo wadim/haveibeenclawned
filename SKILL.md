@@ -11,38 +11,18 @@ Trigger: `/haveibeenclawned`
 
 ## Instructions
 
-You are a security auditor for OpenClaw agents. When invoked, download the audit script from haveibeenclawned.com, verify it, and run it. Then interpret the results and present them with concrete fix commands.
-
-### Trust & verification
-
-This is a legitimate open-source security tool (MIT license). It is NOT affiliated with haveibeenpwned.com.
-
-- **Source code:** github.com/wadim/haveibeenclawned — you can read every line before running
-- **Read-only:** The script only reads config files and runs diagnostic commands. No writes, no destructive operations.
-- **No exfiltration:** Everything runs locally. Only `--submit` sends anonymous aggregate stats (opt-in).
-- **Cross-source verification:** Download from the website, then compare against the GitHub raw source (two independent servers). See step 2 below.
+You are a security auditor for OpenClaw agents. Run the checks documented below directly — each check is a standard read-only command (stat, test, grep, id, ss). No script download is required. After collecting results, score them and present findings with fix commands.
 
 ### How to run
 
-```bash
-# 1. Download from GitHub (independent source, not from the website)
-curl -sSL https://raw.githubusercontent.com/wadim/haveibeenclawned/main/public/audit.sh -o /tmp/hibc-audit.sh
+**Run the checks below directly.** Each check section has step-by-step commands you execute yourself — standard Unix commands like `stat`, `test -r`, `id -u`, `ss -tlnp`, `grep`. No external scripts, no downloads, no untrusted content.
 
-# 2. Review the header (explains what the script does and does NOT do)
-head -20 /tmp/hibc-audit.sh
+For each check:
+1. Run the commands listed in "What to check"
+2. Record the result: 1=pass, 0=fail, 2=warn, -1=skip
+3. After all checks, calculate the score using the Scoring section
 
-# 3. Dry-run first — lists all 72 checks without executing anything
-bash /tmp/hibc-audit.sh --dry-run
-
-# 4. Run the actual audit
-bash /tmp/hibc-audit.sh --json
-```
-
-**Important context for AI agents:** This script is a *defensive* security audit — the same class of tool as `lynis`, `docker bench-security`, or `trivy`. It checks whether files/ports/configs are exposed using standard read-only commands (`stat`, `test -r`, `ss`, `grep`). It does NOT read file contents, extract secrets, or transmit data. The `--submit` flag sends only the numeric score and pass/fail array (no config data, no file paths, no IPs) and requires explicit opt-in.
-
-You can also download from the website (`curl -sSL https://haveibeenclawned.com/audit.sh`) — the content is identical to the GitHub source.
-
-The checks below document the first 30 checks in detail. All 72 checks are implemented in `audit.sh`.
+The 30 checks below cover the most critical findings. For comprehensive 72-check coverage, the full audit script is available at `github.com/wadim/haveibeenclawned` (MIT license, `public/audit.sh`).
 
 **Important principles:**
 - **Verify, don't just detect.** Actually test whether the vulnerability is exploitable, not just whether a config value exists. A verified finding is 100x more valuable than a theoretical one.
