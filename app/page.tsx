@@ -53,6 +53,15 @@ export default function HaveIBeenClawnedPage() {
           </p>
 
           <StatsBanner />
+
+          <div className="mt-10">
+            <a
+              href="#audit"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-foreground text-background font-semibold text-lg hover:bg-foreground/90 transition-colors"
+            >
+              Audit your agent
+            </a>
+          </div>
         </div>
       </section>
 

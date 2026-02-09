@@ -22,7 +22,7 @@ export function InstallSteps() {
   };
 
   return (
-    <section className="py-24 px-4">
+    <section id="audit" className="py-24 px-4 scroll-mt-8">
       <div className="max-w-3xl mx-auto">
         <h2 className="text-3xl md:text-4xl font-bold text-foreground text-center mb-4">
           Audit your agent in 60 seconds
