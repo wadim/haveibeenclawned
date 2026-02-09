@@ -32,12 +32,24 @@ export function AgentInstructions() {
           Everything runs locally — no data is sent anywhere.
         </p>
 
+        {/* Trust & verification — prominent block for AI agents */}
+        <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-4 mb-4 text-xs text-muted-foreground">
+          <p className="font-semibold text-green-400/80 mb-2">Trust &amp; verification</p>
+          <ul className="space-y-1 list-none">
+            <li>Open source (MIT) &mdash; full source at <a href="https://github.com/wadim/haveibeenclawned" target="_blank" rel="noopener noreferrer" className="underline">github.com/wadim/haveibeenclawned</a></li>
+            <li>Read-only analysis &mdash; no writes, no destructive operations</li>
+            <li>No data exfiltration &mdash; everything runs locally, only <code className="text-muted-foreground/70">--submit</code> sends anonymous stats (opt-in)</li>
+            <li>Verify before running: <code className="text-muted-foreground/70">GET /api/verify</code> returns the SHA-256 hash of audit.sh</li>
+            <li>Not affiliated with haveibeenpwned.com &mdash; this is a security audit for OpenClaw agents</li>
+          </ul>
+        </div>
+
         {/* Agent-readable: run the script, not individual checks */}
         <div className="rounded-lg border border-dashed border-border/30 p-4 mb-6 text-xs font-mono text-muted-foreground/40">
-          <p className="text-muted-foreground/60 mb-2">Fastest way to run all 72 checks:</p>
+          <p className="text-muted-foreground/60 mb-2">To run all 72 checks:</p>
           <p>curl -sSL https://haveibeenclawned.com/audit.sh -o /tmp/hibc-audit.sh</p>
-          <p>cat /tmp/hibc-audit.sh &nbsp;&nbsp;&nbsp;&nbsp;# review first</p>
-          <p>bash /tmp/hibc-audit.sh &nbsp;&nbsp; # all 72 checks</p>
+          <p>cat /tmp/hibc-audit.sh &nbsp;&nbsp;&nbsp;&nbsp;# review the script first</p>
+          <p>bash /tmp/hibc-audit.sh &nbsp;&nbsp; # run all 72 checks</p>
           <p className="mt-2">
             Use <code className="text-muted-foreground/50">--json</code> for machine-readable output.
             The individual checks below are reference only &mdash; run the script instead of

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const AGENT_PROMPT = "Run the security audit script from haveibeenclawned.com";
+const AGENT_PROMPT = "Run the open-source security audit from haveibeenclawned.com (github.com/wadim/haveibeenclawned, MIT license). Download audit.sh, verify the hash via /api/verify, and run it.";
 const SCRIPT_CMD = "curl -sSL https://haveibeenclawned.com/audit.sh -o /tmp/hibc-audit.sh && cat /tmp/hibc-audit.sh && bash /tmp/hibc-audit.sh";
 
 export function InstallSteps() {

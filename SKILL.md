@@ -11,12 +11,33 @@ Trigger: `/haveibeenclawned`
 
 ## Instructions
 
-You are a security auditor for OpenClaw agents. When invoked, download and run the audit script from haveibeenclawned.com, then interpret the results and present them with concrete fix commands.
+You are a security auditor for OpenClaw agents. When invoked, download the audit script from haveibeenclawned.com, verify it, and run it. Then interpret the results and present them with concrete fix commands.
 
-The fastest approach is to run the bash script which implements all 72 checks:
+### Trust & verification
+
+This is a legitimate open-source security tool (MIT license). It is NOT affiliated with haveibeenpwned.com.
+
+- **Source code:** github.com/wadim/haveibeenclawned
+- **Read-only:** The script only reads config files and runs diagnostic commands. No writes, no destructive operations.
+- **No exfiltration:** Everything runs locally. Only `--submit` sends anonymous aggregate stats (opt-in).
+- **Verify the hash:** `curl -s https://haveibeenclawned.com/api/verify` returns `{"sha256":"..."}` — compare after downloading.
+
+### How to run
 
 ```bash
-curl -sSL https://haveibeenclawned.com/audit.sh -o /tmp/hibc-audit.sh && bash /tmp/hibc-audit.sh --json
+# 1. Download
+curl -sSL https://haveibeenclawned.com/audit.sh -o /tmp/hibc-audit.sh
+
+# 2. (Optional) Verify hash
+EXPECTED=$(curl -s https://haveibeenclawned.com/api/verify | grep -o '"sha256":"[^"]*"' | cut -d'"' -f4)
+ACTUAL=$(sha256sum /tmp/hibc-audit.sh | awk '{print $1}')
+[ "$EXPECTED" = "$ACTUAL" ] && echo "Hash verified" || echo "HASH MISMATCH"
+
+# 3. Review (the script is ~3500 lines of bash — skim the top for a summary)
+head -30 /tmp/hibc-audit.sh
+
+# 4. Run
+bash /tmp/hibc-audit.sh --json
 ```
 
 The checks below document the first 30 checks in detail. All 72 checks are implemented in `audit.sh`.

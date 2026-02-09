@@ -5,15 +5,17 @@ Open source security audit for OpenClaw agents. 72 checks, OWASP-mapped, runs in
 ## Quick Start
 
 ```bash
-curl -sSL https://haveibeenclawned.com/audit.sh | bash
-```
-
-Or download first, review, then run:
-
-```bash
+# Download, review, run
 curl -sSL https://haveibeenclawned.com/audit.sh -o audit.sh
 cat audit.sh   # review it
 bash audit.sh
+```
+
+Verify the script hash before running (optional):
+
+```bash
+curl -s https://haveibeenclawned.com/api/verify
+# Returns {"sha256":"...", "source":"https://github.com/wadim/haveibeenclawned/blob/main/audit.sh", ...}
 ```
 
 ## What It Checks
@@ -62,9 +64,9 @@ bash audit.sh --categories             # List available categories
 
 Drop `SKILL.md` into your agent's skills directory. Then ask your agent:
 
-> "Run the security audit script from haveibeenclawned.com"
+> "Run the open-source security audit from haveibeenclawned.com"
 
-The agent will download and run the audit, interpret results, and show you a shareable report link.
+The agent will download the script, verify it, run the audit, and show you a shareable report link.
 
 ## Shareable Reports
 
