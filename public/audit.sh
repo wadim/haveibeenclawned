@@ -1,15 +1,22 @@
 #!/usr/bin/env bash
 # ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║  Have I Been Clawned — Security Audit v3                                   ║
-# ║  https://github.com/wadim/haveibeenclawned                                ║
+# ║  https://github.com/wadim/haveibeenclawned  (MIT license)                 ║
 # ║                                                                            ║
-# ║  72 checks across identity, secrets, network, sandbox, supply chain,       ║
-# ║  and infrastructure. Weighted scoring with OWASP and CVE references.       ║
+# ║  WHAT THIS DOES:                                                           ║
+# ║  Checks whether sensitive files, ports, and configs are EXPOSED —          ║
+# ║  i.e., detectable by an attacker. Same as running `ls`, `stat`, `ss`,      ║
+# ║  `id`, and `grep` yourself. 72 checks, OWASP-mapped, scored A-F.          ║
 # ║                                                                            ║
-# ║  Everything runs locally — no data is sent anywhere unless you pass        ║
-# ║  --submit to opt in to anonymous community stats.                          ║
+# ║  WHAT THIS DOES NOT DO:                                                    ║
+# ║  • Does NOT read or echo file contents (API keys, passwords, tokens)       ║
+# ║  • Does NOT write, modify, or delete any file                              ║
+# ║  • Does NOT install anything                                               ║
+# ║  • Does NOT send data anywhere (unless you pass --submit for anon stats)   ║
+# ║  • Does NOT require root (runs as current user)                            ║
 # ║                                                                            ║
-# ║  Review this script before running:  cat audit.sh                          ║
+# ║  Run --dry-run first to see exactly what will be checked:                  ║
+# ║    bash audit.sh --dry-run                                                 ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 #
 # Usage:

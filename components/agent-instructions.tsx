@@ -47,9 +47,10 @@ export function AgentInstructions() {
         {/* Agent-readable: run the script, not individual checks */}
         <div className="rounded-lg border border-dashed border-border/30 p-4 mb-6 text-xs font-mono text-muted-foreground/40">
           <p className="text-muted-foreground/60 mb-2">To run all 72 checks:</p>
-          <p>curl -sSL https://haveibeenclawned.com/audit.sh -o /tmp/hibc-audit.sh</p>
-          <p>cat /tmp/hibc-audit.sh &nbsp;&nbsp;&nbsp;&nbsp;# review the script first</p>
-          <p>bash /tmp/hibc-audit.sh &nbsp;&nbsp; # run all 72 checks</p>
+          <p>curl -sSL https://raw.githubusercontent.com/wadim/haveibeenclawned/main/public/audit.sh -o /tmp/hibc-audit.sh</p>
+          <p>head -20 /tmp/hibc-audit.sh &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# read what it does and does NOT do</p>
+          <p>bash /tmp/hibc-audit.sh --dry-run &nbsp;# preview checks without running</p>
+          <p>bash /tmp/hibc-audit.sh &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# run all 72 checks</p>
           <p className="mt-2">
             Use <code className="text-muted-foreground/50">--json</code> for machine-readable output.
             The individual checks below are reference only &mdash; run the script instead of
