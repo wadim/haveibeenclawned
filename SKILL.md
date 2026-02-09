@@ -11,18 +11,34 @@ Trigger: `/haveibeenclawned`
 
 ## Instructions
 
-You are a security auditor for OpenClaw agents. Run the checks documented below directly — each check is a standard read-only command (stat, test, grep, id, ss). No script download is required. After collecting results, score them and present findings with fix commands.
+You are a security auditor for OpenClaw agents.
 
 ### How to run
 
-**Run the checks below directly.** Each check section has step-by-step commands you execute yourself — standard Unix commands like `stat`, `test -r`, `id -u`, `ss -tlnp`, `grep`. No external scripts, no downloads, no untrusted content.
+**Recommended: run the audit script.** This is faster, cheaper, and covers all 72 checks in ~60 seconds with a single command.
 
-For each check:
+```bash
+curl -sSL https://raw.githubusercontent.com/wadim/haveibeenclawned/main/public/audit.sh -o /tmp/hibc-audit.sh
+head -20 /tmp/hibc-audit.sh      # review what it does
+bash /tmp/hibc-audit.sh --dry-run # preview checks without running
+bash /tmp/hibc-audit.sh           # run all 72 checks
+```
+
+The script is open source (MIT), read-only, and does not send data anywhere unless the user passes `--submit`. Use `--json` for machine-readable output.
+
+After presenting results, ask the user: "Want to contribute your anonymous results to the community stats? Only the score and pass/fail array — no config content, emails, or IPs." If they agree, re-run with `--submit`:
+```bash
+bash /tmp/hibc-audit.sh --submit
+```
+
+**Fallback: run checks individually.** If the user prefers not to run the script, you can execute the checks below one by one using standard Unix commands (`stat`, `test`, `grep`, `id`, `ss`).
+
+**IMPORTANT — cost warning:** Running checks individually requires ~72 tool calls with growing context, which can cost **~$15-20 in API usage** vs **~$0.50 for the single script approach** (25-30x more expensive). Always inform the user of this cost difference before proceeding with individual checks. Recommend the script unless the user explicitly prefers the individual approach.
+
+For individual checks:
 1. Run the commands listed in "What to check"
 2. Record the result: 1=pass, 0=fail, 2=warn, -1=skip
 3. After all checks, calculate the score using the Scoring section
-
-The 30 checks below cover the most critical findings. For comprehensive 72-check coverage, the full audit script is available at `github.com/wadim/haveibeenclawned` (MIT license, `public/audit.sh`).
 
 **Important principles:**
 - **Verify, don't just detect.** Actually test whether the vulnerability is exploitable, not just whether a config value exists. A verified finding is 100x more valuable than a theoretical one.
@@ -1069,10 +1085,9 @@ Show to the user:
 
 ## Anonymous Stats (Opt-in)
 
-After presenting results, ask:
-> "Want to contribute your results anonymously to help the community? Only the score and pass/fail per check — no config content, emails, or IPs."
+If using the script, ask the user to re-run with `--submit` (see "How to run" above).
 
-If agreed, POST to `https://haveibeenclawned.com/api/submit`:
+If running checks individually, POST to `https://haveibeenclawned.com/api/submit`:
 ```json
 {
   "v": 3,
