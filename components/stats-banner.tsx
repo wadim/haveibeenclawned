@@ -17,12 +17,9 @@ export function StatsBanner() {
   const avgScore = stats?.avgScore ?? 0;
   const criticalPct = stats?.criticalPct ?? 0;
 
-  if (total === 0) {
-    return (
-      <div className="flex flex-wrap justify-center gap-8 mt-8">
-        <StatItem value="Be the first" label="to scan your agent" />
-      </div>
-    );
+  // Show stats only when there's enough data to be meaningful
+  if (total < 100) {
+    return null;
   }
 
   return (
