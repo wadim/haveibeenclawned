@@ -1182,46 +1182,66 @@ check_23() {
 # Without a firewall, every listening port is directly reachable.
 check_24() {
   local has_firewall=false
+  local permission_denied=false
 
   # Linux: iptables
   if command -v iptables &>/dev/null; then
-    local rules
-    rules=$(iptables -L -n 2>/dev/null | grep -cvE '^Chain|^target|^$' 2>/dev/null) || true
-    if [[ -n "$rules" ]] && (( rules > 0 )); then
-      has_firewall=true
+    local ipt_err
+    ipt_err=$(iptables -L -n 2>&1)
+    if echo "$ipt_err" | grep -qiE 'permission denied|operation not permitted'; then
+      permission_denied=true
+    else
+      local rules
+      rules=$(echo "$ipt_err" | grep -cvE '^Chain|^target|^$' 2>/dev/null) || true
+      if [[ -n "$rules" ]] && (( rules > 0 )); then
+        has_firewall=true
+      fi
     fi
   fi
 
   # Linux: ufw
   if ! $has_firewall && command -v ufw &>/dev/null; then
-    if ufw status 2>/dev/null | grep -q 'Status: active'; then
+    local ufw_err
+    ufw_err=$(ufw status 2>&1)
+    if echo "$ufw_err" | grep -qiE 'permission denied|operation not permitted'; then
+      permission_denied=true
+    elif echo "$ufw_err" | grep -q 'Status: active'; then
       has_firewall=true
     fi
   fi
 
   # Linux: nftables
   if ! $has_firewall && command -v nft &>/dev/null; then
-    if nft list ruleset 2>/dev/null | grep -q 'chain'; then
+    local nft_err
+    nft_err=$(nft list ruleset 2>&1)
+    if echo "$nft_err" | grep -qiE 'permission denied|operation not permitted'; then
+      permission_denied=true
+    elif echo "$nft_err" | grep -q 'chain'; then
       has_firewall=true
     fi
   fi
 
   # macOS: pf
   if ! $has_firewall && [[ "$(uname)" == "Darwin" ]]; then
-    if pfctl -s info 2>/dev/null | grep -q 'Status: Enabled'; then
+    local pf_err
+    pf_err=$(pfctl -s info 2>&1)
+    if echo "$pf_err" | grep -qiE 'permission denied|operation not permitted'; then
+      permission_denied=true
+    elif echo "$pf_err" | grep -q 'Status: Enabled'; then
       has_firewall=true
-    else
-      # macOS Application Firewall
-      if command -v /usr/libexec/ApplicationFirewall/socketfilterfw &>/dev/null; then
-        if /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate 2>/dev/null | grep -q 'enabled'; then
-          has_firewall=true
-        fi
+    fi
+    # macOS Application Firewall (no root needed)
+    if ! $has_firewall && command -v /usr/libexec/ApplicationFirewall/socketfilterfw &>/dev/null; then
+      if /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate 2>/dev/null | grep -q 'enabled'; then
+        has_firewall=true
       fi
     fi
   fi
 
   if $has_firewall; then
     record 1 "Firewall active"
+  elif $permission_denied; then
+    record 2 "Firewall check inconclusive — no permission to read rules (non-root)"
   else
     record 0 "No firewall detected"
   fi
